@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>sched-assist-oraclecalendar</artifactId>
+		<groupId>org.jasig.sched-assist</groupId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	
+	<artifactId>oracle-csdk-loader</artifactId>
+	<name>Oracle CSDK Loader</name>
+	<description>Library to assist initialization of the Oracle CSDK native library.</description>
+
+	<dependencies>
+		<dependency>
+			<artifactId>csdk</artifactId>
+			<groupId>com.oracle</groupId>
+			<version>${oracle.csdk.version}</version>
+		</dependency>
+		<dependency>
+			<artifactId>junit</artifactId>
+			<groupId>junit</groupId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<forkMode>pertest</forkMode>
+					<environmentVariables>
+						<LD_LIBRARY_PATH>${oracle.calendar.home}/lib:${oracle.calendar.home}/ocal/lib</LD_LIBRARY_PATH>
+					</environmentVariables>
+					<systemProperties>
+						<property>
+							<name>java.library.path</name>
+							<value>${oracle.calendar.home}/lib:${oracle.calendar.home}/ocal/lib</value>
+						</property>
+					</systemProperties>
+					<additionalClasspathElements>
+						<additionalClasspathElement>${project.basedir}/src/test/resources/test-csdk-config-injar.jar</additionalClasspathElement>
+					</additionalClasspathElements>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

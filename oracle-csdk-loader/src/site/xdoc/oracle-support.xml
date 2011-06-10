@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Jasig under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Jasig licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License. You may obtain a
+    copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on
+    an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+
+<document>
+    <properties>
+        <title>Scheduling Assistant Oracle CSDK Loader Library</title>
+    </properties>
+
+    <body>
+
+        <section name="Oracle Calendar SDK, JNI, and Classloading">
+<p>The use of the Java Native Interface for the Oracle Calendar SDK presents a unique problem when trying to deploy
+multiple web applications that depend on it within the same servlet container. The Scheduling Assistant Oracle CSDK Loader project
+attempts to make it easier.</p>
+
+<h4>Foreground</h4>
+<p>The servlet specification recommends that each web application get it's own Java ClassLoader, "so
+that classes and resources packaged within the <acronym title="Web application ARchive">WAR</acronym> are loaded in preference to
+classes and resources residing in container-wide library JARs" (see section 9.7.2, Web Application Classloader of the Servlet Specification); 
+Tomcat implements this recommendation. In addition, there is no guarantee to the order that is chosen for loading web applications
+within the servlet container.</p>
+
+<h4>The Problem</h4>
+<p>If you deploy two separate web applications, each of which makes a call in one of it's internal classes to 
+<a href="http://java.sun.com/javase/6/docs/api/java/lang/System.html#loadLibrary(java.lang.String)" class="external">System.loadLibrary(String libname)</a>
+with the same value of the 'libname' argument to one instance of Tomcat, the first web application will load successfully. 
+The second web application, however, will fail to start throwing the following error:</p>
+<pre>
+java.lang.UnsatisfiedLinkError: Native Library /path/to/your/oracle-csdk/ocal/lib/libcsdkjni.so already loaded in 
+	another classloader
+	at java.lang.ClassLoader.loadLibrary0(ClassLoader.java:1716)
+	at java.lang.ClassLoader.loadLibrary(ClassLoader.java:1676)
+	at java.lang.Runtime.loadLibrary0(Runtime.java:823)
+	at java.lang.System.loadLibrary(System.java:1030)
+	....[rest of stack trace removed for brevity]
+</pre>
+<p>This is somewhat confusing, as the javadoc for 
+<a href="http://java.sun.com/javase/6/docs/api/java/lang/Runtime.html#loadLibrary(java.lang.String)" class="external">Runtime.loadLibrary()</a> 
+(which System.loadLibrary is actually invoking) states that "If this method is called more than once with the same library name, the second and subsequent calls are ignored."
+</p>
+
+<h4>Why the error occurs</h4>
+
+<p>The line number listed in for <span class="setting">java.lang.ClassLoader.loadLibrary0(ClassLoader.java:1716)</span> shows us why.
+The <span class="setting">loadLibrary0</span> method first tests a java.util.Vector called <span class="setting">loadedLibraryNames</span>
+to see if the library has already been loaded. When the first web application is loading, the <span class="setting">csdkjni</span> library name doesn't
+yet exist in this Vector, and the method continues successfully.</p>
+<p>When the second web application starts, it has it's own instance of ClassLoader. The <span class="setting">loadedLibraryNames</span>
+
+is <strong>static</strong> - which means EVERY instance of ClassLoader shares the same Vector of loadedLibraryNames. The loadLibrary0
+method gets called for <span class="setting">csdkjni</span>, and since the library name is already in that list, the UnsatisfiedLinkError halts the start of the web application.</p> 
+
+<h4>The Workaround</h4>
+<p>We need to guarantee that System.loadLibrary gets called once and only once for <span class="setting">csdkjni</span>. The quickest way to do this is get a class loaded
+by one of the parent ClassLoaders in Tomcat (called "Shared" in the Tomcat Servlet Container) to call System.loadLibrary.</p>
+<p>The most important class in <span class="filename">oracle-csdk-loader-1.0.0.jar</span> is <span class="setting">org.jasig.schedassist.oraclecalendar.OracleCalendarSDKSupport</span>.
+This is an abstract class with no methods, it only defines a static initializer. A static initializer is run by the JVM once
+and only once - when the class is loaded, before any other part of the class.
+</p>
+
+<h4>Deployment/Usage</h4>
+
+<p><strong>If you plan on deploying Scheduling Assistant in Tomcat configured for use with an Oracle Calendar instance,
+the <span class="filename">oracle-csdk-loader-1.0.0.jar</span> file and the Oracle Calendar SDK jar file <span class="filename">csdk.jar</span> must be installed
+in your Tomcat server in <span class="setting">$CATALINA_HOME/lib</span>. In addition, you must not include a copy of either of these files
+within your web applications <span class="setting">WEB-INF/lib</span>.
+</p>
+
+
+<p>If you plan to write your own applications dependent on the Oracle Calendar SDK, within your web application code, your <acronym title="Data Access Object">DAO</acronym>s 
+that need to interact with the Oracle Calendar SDK should
+<strong>extend</strong> the <span class="setting">org.jasig.schedassist.oraclecalendar.OracleCalendarSDKSupport</span> class. An example of this can be found within
+the <a href="#">OracleCalendarDataDaoImpl</a> class.</p>
+
+<h4>Additional Information</h4>
+<p>See 
+
+<a href="http://tomcat.apache.org/tomcat-6.0-doc/class-loader-howto.html" class="external">Tomcat's ClassLoader HOW-TO</a> for more information
+on their ClassLoader hierarchy.</p>
+            
+        </section>
+    </body>
+</document>

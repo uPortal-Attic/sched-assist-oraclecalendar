@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Jasig under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Jasig licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License. You may obtain a
+    copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on
+    an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+
+<beans	xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:ehcache="http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring"
+		xmlns:tx="http://www.springframework.org/schema/tx"
+		xmlns:task="http://www.springframework.org/schema/task"
+		xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring/ehcache-spring-1.1.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+	
+	<!-- This Spring context defines all Oracle Calendar server specific beans -->
+	
+	<!-- begin section 3: calendarDao -->
+	<bean id="calendarDao" class="org.jasig.schedassist.impl.oraclecalendar.PooledOracleCalendarDaoImpl">
+		<property name="serverNodes"><ref bean="oracleCalendarNodeMap"/></property>
+		<property name="oracleSessionPool" ref="oracleSessionPool"/>
+	</bean>		
+	<!-- end section 3: calendarDao -->
+	
+	<!-- begin section 4: available service beans -->
+	<bean id="eventUtils" class="org.jasig.schedassist.impl.oraclecalendar.OracleEventUtilsImpl"/>
+	<bean id="visibleScheduleBuilder" class="org.jasig.schedassist.model.VisibleScheduleBuilder">
+		<property name="eventUtils" ref="eventUtils"/>
+	</bean>	
+	<!-- end section 4: available service beans -->
+
+	<bean id="mbeanExporter" class="org.springframework.jmx.export.MBeanExporter">
+		<property name="beans">
+			<map>
+				<entry key="OracleSessionObjectPools:name=SchedulingAssistantOracleSessionPoolStatistics" value-ref="oracleSessionPool" />
+			</map>
+		</property>
+		<property name="assembler" ref="mbeanInfoAssembler"/>
+	</bean>
+</beans>

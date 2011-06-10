@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Jasig under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Jasig licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License. You may obtain a
+    copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on
+    an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+
+<beans	xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                 <value>classpath:/oracle-calendar.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+	<bean id="contextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+		<property name="url">
+			<value>${ldap.url}</value>
+		</property>
+		<property name="userDn">
+			<value>${ldap.userDn}"</value>
+		</property>
+		<property name="password">
+			<value>${ldap.password}</value>
+		</property>
+		<property name="pooled"><value>false</value></property>
+	</bean>
+	<bean id="userAccountBaseDn" class="java.lang.String">
+		<constructor-arg><value>${ldap.userAccountBaseDn}</value></constructor-arg>
+	</bean>
+	<bean id="resourceAccountBaseDn" class="java.lang.String">
+		<constructor-arg><value>${ldap.resourceAccountBaseDn}"</value></constructor-arg>
+	</bean>
+	
+	<!-- control user must exist -->
+	<bean id="controlUser" class="org.jasig.schedassist.impl.oraclecalendar.OracleCalendarUserAccount">
+		<property name="ctcalxitemid" value="20000:01182"/>
+		<property name="emailAddress" value="nblair@doit.wisc.edu"/>
+		<property name="givenName" value="NICHOLAS"/>
+		<property name="surname" value="BLAIR"/>
+		<property name="username" value="npblair"/>
+	</bean>
+	<!-- control role based account must exist -->
+	<bean id="controlRoleBasedAccount" class="org.jasig.schedassist.impl.oraclecalendar.OracleCalendarUserAccount">
+		<property name="ctcalxitemid" value="20000:01757"/>
+		<property name="emailAddress" value="jstalnak@wisc.edu"/>
+		<property name="givenName" value="DOIT"/>
+		<property name="surname" value="AvailableTest"/>
+		<property name="username" value="doit-availab"/>
+	</bean>
+	<!-- control resource account must exist -->
+	<bean id="controlResourceAccount" class="org.jasig.schedassist.impl.oraclecalendar.OracleCalendarResourceAccount">
+		<property name="accountOwner" ref="controlUser"/>
+		<property name="ctcalxitemid" value="20000:01516"/>
+		<property name="resourceName" value="DOIT blair test"/>
+		<property name="location" value="{3233 Computer Science}"/>
+		<property name="oracleGuid" value="200000151619869596736320"/>
+		<property name="emailAddress" value="nblair@doit.wisc.edu"></property>
+		<property name="contactInformation" value="NICHOLAS BLAIR, (608)262-2153"/>
+		<qualifier value="control"/>
+	</bean>
+	
+	<bean id="nullGuidResource" class="org.jasig.schedassist.impl.oraclecalendar.OracleCalendarResourceAccount">
+		<property name="accountOwner">
+			<bean class="org.jasig.schedassist.impl.oraclecalendar.OracleCalendarUserAccount">
+				<property name="ctcalxitemid" value="20000:01599"/>
+				<property name="emailAddress" value="mesdjian@wisctest.wisc.edu"/>
+				<property name="givenName" value="MESDJIAN"/>
+				<property name="surname" value="ARA"/>
+				<property name="username" value="mesdjian"/>
+			</bean>
+		</property>
+		<property name="ctcalxitemid" value="20000:01467"/>
+		<property name="resourceName" value="DOIT Portal View Test Resource"/>
+		<property name="contactInformation" value="ARA MESDJIAN, (608)262-6732"/>
+		<qualifier value="null-guid"/>
+	</bean>
+	
+	<!-- you should not have to modify beans below this line -->
+	<bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+		<constructor-arg ref="contextSource" />
+	</bean>
+	<bean id="calendarAccountDao" class="org.jasig.schedassist.impl.oraclecalendar.OracleLdapCalendarAccountDaoImpl">
+		<property name="ldapTemplate" ref="ldapTemplate"/>
+		<property name="baseDn" ref="userAccountBaseDn"/>
+	</bean>
+	
+	<bean id="delegateAccountDao" class="org.jasig.schedassist.impl.oraclecalendar.OracleLdapCalendarResourceAccountDaoImpl">
+		<property name="ldapTemplate" ref="ldapTemplate"/>
+		<property name="baseDn" ref="resourceAccountBaseDn"/>
+	</bean>
+		
+	<bean id="oracleGUIDSource" class="org.jasig.schedassist.impl.oraclecalendar.OracleGUIDSourceImpl"/>
+</beans>

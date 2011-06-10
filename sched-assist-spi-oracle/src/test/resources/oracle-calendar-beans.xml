@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Jasig under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Jasig licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License. You may obtain a
+    copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on
+    an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied. See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+
+<beans	xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:util="http://www.springframework.org/schema/util"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+			http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                 <value>classpath:/oracle-calendar.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+	<util:map id="oracleCalendarNodeMap" key-type="java.lang.String" value-type="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+		<entry key="10000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node10000.host}"/>
+				<property name="nodeName" value="10000"/>
+				<property name="sysopPassword" value="${oracle.node10000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="11000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node11000.host}"/>
+				<property name="nodeName" value="11000"/>
+				<property name="sysopPassword" value="${oracle.node11000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="12000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node12000.host}"/>
+				<property name="nodeName" value="12000"/>
+				<property name="sysopPassword" value="${oracle.node12000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="13000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node13000.host}"/>
+				<property name="nodeName" value="13000"/>
+				<property name="sysopPassword" value="${oracle.node13000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="14000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node14000.host}"/>
+				<property name="nodeName" value="14000"/>
+				<property name="sysopPassword" value="${oracle.node14000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="15000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node15000.host}"/>
+				<property name="nodeName" value="15000"/>
+				<property name="sysopPassword" value="${oracle.node15000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="20000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node20000.host}"/>
+				<property name="nodeName" value="20000"/>
+				<property name="sysopPassword" value="${oracle.node20000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="21000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node21000.host}"/>
+				<property name="nodeName" value="21000"/>
+				<property name="sysopPassword" value="${oracle.node21000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="22000">
+			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node22000.host}"/>
+				<property name="nodeName" value="22000"/>
+				<property name="sysopPassword" value="${oracle.node22000.sysopPassword}"/>
+			</bean>
+		</entry>
+		<entry key="23000">
+ 			<bean class="org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode">
+				<property name="serverAddress" value="${oracle.node23000.host}"/>
+				<property name="nodeName" value="23000"/>
+				<property name="sysopPassword" value="${oracle.node23000.sysopPassword}"/>
+			</bean>
+		</entry>
+	</util:map>
+	
+	<bean id="oracleSessionPool" class="org.apache.commons.pool.impl.GenericKeyedObjectPool">
+		<constructor-arg>
+			<bean id="objectFactory" class="org.jasig.schedassist.oraclecalendar.OracleSessionPoolableObjectFactory"/>
+		</constructor-arg>
+		<property name="maxActive"><value>-1</value></property>
+		<property name="maxIdle"><value>8</value></property>
+		<property name="whenExhaustedAction">
+			<bean class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+				<property name="staticField"><value>org.apache.commons.pool.impl.GenericKeyedObjectPool.WHEN_EXHAUSTED_GROW</value></property>
+			</bean>
+		</property>
+		<property name="testOnBorrow"><value>true</value></property>
+		<property name="testOnReturn"><value>false</value></property>
+		<property name="timeBetweenEvictionRunsMillis"><value>60000</value></property>
+		<property name="minEvictableIdleTimeMillis"><value>120000</value></property>
+		<property name="testWhileIdle"><value>true</value></property>
+	</bean>
+	
+	<bean id="oracleGUIDSource" class="org.jasig.schedassist.impl.oraclecalendar.OracleGUIDSourceImpl">
+		<property name="serverNodes" ref="oracleCalendarNodeMap"/>
+	</bean>
+	<bean id="defaultOracleCalendarDao" class="org.jasig.schedassist.impl.oraclecalendar.DefaultOracleCalendarDaoImpl">
+		<property name="serverNodes" ref="oracleCalendarNodeMap"/>
+	</bean>
+	
+	<bean class="org.jasig.schedassist.impl.oraclecalendar.OracleEventUtilsImpl"/>
+</beans>

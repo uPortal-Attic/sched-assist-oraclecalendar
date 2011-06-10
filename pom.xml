@@ -1,0 +1,76 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.jasig.sched-assist</groupId>
+	<artifactId>sched-assist-oraclecalendar</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Scheduling Assistant: Oracle Calendar Integration</name>
+	<description>The root project definition for the Scheduling Assistant integration with Oracle Calendar.</description>
+
+	<parent>
+		<artifactId>sched-assist</artifactId>
+		<groupId>org.jasig.sched-assist</groupId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	<modules>
+		<module>oracle-csdk-loader</module>
+		<module>oracle-csdk-pool</module>
+		<module>sched-assist-spi-oracle</module>
+		<module>sched-assist-war-oraclecalendar</module>
+	</modules>
+
+	<properties>
+		<oracle.csdk.version>10.1.2.3.4</oracle.csdk.version>
+		<!-- | WARNING: this location is environment specific. If you are developing 
+			this library, you must alter this property locally. -->
+		<oracle.calendar.home>/usr/local/oracle-csdk</oracle.calendar.home>
+	</properties>
+
+	<build>
+		<pluginManagement>
+	       <plugins>
+	           <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>2.1.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.3.2</version>
+                </plugin>
+                <plugin>
+                	<groupId>org.apache.maven.plugins</groupId>
+    				<artifactId>maven-surefire-plugin</artifactId>
+    				<version>2.8.1</version>
+                </plugin>
+	       </plugins>
+	   	</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>com.mycila.maven-license-plugin</groupId>
+				<artifactId>maven-license-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>oracle-csdk-loader/**/*.ini</exclude>
+						<exclude>**/*.ics</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jasig.maven</groupId>
+				<artifactId>maven-notice-plugin</artifactId>
+				<version>1.0.4</version>
+				<configuration>
+					<noticeTemplate>NOTICE.template</noticeTemplate>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
