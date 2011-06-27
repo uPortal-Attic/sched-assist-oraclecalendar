@@ -36,7 +36,7 @@
 		</artifact:install>
 	</target>
 
-	<target name="deploy-oracle-csdk-and-loader">
+	<target name="deploy-oracle-csdk-and-loader" description="Deploys Oracle CSDK and oracle-csdk-loader dependency to the Tomcat shared classloader directory">
 		<artifact:pom id="pom" file="pom.xml" />
 		<copy todir="${tomcat.home}/shared/lib">
 			<fileset file="${csdk.jar}"/>
