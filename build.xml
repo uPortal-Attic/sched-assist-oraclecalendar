@@ -42,7 +42,7 @@
 			<fileset file="${csdk.jar}"/>
 			<fileset file="oracle-csdk-loader/target/oracle-csdk-loader-${pom.version}.jar"/>
 		</copy>
-		<echo message="Don't forget to modify ${container.home}/conf/catalina.properties and set the 'shared.loader' property to '${catalina.home}/shared/lib/*.jar'"/>
+		<echo message="Don't forget to modify ${tomcat.home}/conf/catalina.properties and set the 'shared.loader' property to '${catalina.home}/shared/lib/*.jar'"/>
 	</target>
 	
 	<!-- This target removes the web application from the tomcat installation
