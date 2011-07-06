@@ -29,7 +29,7 @@
 		</classpath>
 	</typedef>
 	
-	<target name="maven-install-oracle-csdk">
+	<target name="maven-install-oracle-csdk" description="Install Oracle CSDK in your local maven repository (MUST specify 'csdk.jar' in build.properties first)">
 		<artifact:pom id="oracle-csdk.pom" file="${basedir}/bootstrap/oracle-csdk-pom.xml"/>
 		<artifact:install file="${csdk.jar}">
 			<pom refid="oracle-csdk.pom"/>
