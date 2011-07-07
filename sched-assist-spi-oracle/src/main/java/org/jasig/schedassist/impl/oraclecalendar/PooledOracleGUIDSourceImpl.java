@@ -103,6 +103,9 @@ public class PooledOracleGUIDSourceImpl extends OracleCalendarSDKSupport
 	@Override
 	public String getOracleGUID(final ICalendarAccount account,
 			final Session session) throws Api.StatusException {
+		if(session == null) {
+			return null;
+		}
 		Handle handle = session.getHandle(Api.CSDK_FLAG_NONE, account.getCalendarLoginId());
 		String guid = handle.getGUID();
 		LOG.debug("user guid: " + guid);
@@ -141,7 +144,8 @@ public class PooledOracleGUIDSourceImpl extends OracleCalendarSDKSupport
 			session.setIdentity(Api.CSDK_FLAG_NONE, account.getCalendarLoginId());
 			return session;
 		} catch (Exception e) {
-			throw new OracleCalendarDataAccessException("unable to retrieve Session from pool", e);
+			LOG.error("unable to retrieve Session from pool for " + account, e);
+			return null;
 		}
 	}
 	

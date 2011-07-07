@@ -104,6 +104,9 @@ OracleGUIDSource {
 	@Override
 	public String getOracleGUID(final ICalendarAccount account,
 			final Session session) throws Api.StatusException {
+		if(session == null) {
+			return null;
+		}
 		Handle handle = session.getHandle(Api.CSDK_FLAG_NONE, account.getCalendarLoginId());
 		String guid = handle.getGUID();
 		LOG.debug("user guid: " + guid);
