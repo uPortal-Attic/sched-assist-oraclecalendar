@@ -50,6 +50,7 @@ import oracle.calendar.sdk.RequestResult;
 import oracle.calendar.sdk.Session;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jasig.schedassist.ConflictExistsException;
@@ -184,10 +185,10 @@ public abstract class AbstractOracleCalendarDao extends
 			
 			return result;
 		} catch (ParserException e) {
-			LOG.error("caught ParserException in getCalendar", e);
+			LOG.error("caught ParserException in getCalendar for " + calendarAccount, e);
 			throw new OracleCalendarParserException("caught ParserException", agenda, e);
 		} catch (Api.StatusException e) {
-			LOG.error("caught Api.StatusException in getCalendar", e);
+			LOG.error("caught Api.StatusException in getCalendar for " + calendarAccount, e);
 			invalidateSession = true;
 			throw new OracleCalendarDataAccessException("caught Oracle Calendar Exception", e);
 		} finally {
@@ -228,7 +229,7 @@ public abstract class AbstractOracleCalendarDao extends
 						Parameter appointmentRole = attendee.getParameter(AppointmentRole.APPOINTMENT_ROLE);
 						if(AppointmentRole.OWNER.equals(appointmentRole) ) {
 							// remove whole appointment
-							String eventUid = event.getUid().getValue();
+							Uid eventUid = event.getUid();
 							cancelAppointmentInternal(session, eventUid);
 							LOG.warn("successfully cancelled appointment due to owner decline " + event);
 							addEventToResult = false;
@@ -245,7 +246,7 @@ public abstract class AbstractOracleCalendarDao extends
 							} else {
 								// either one on one appointment or group appointment with only 1 visitor
 								// remove whole appointment
-								String eventUid = event.getUid().getValue();
+								Uid eventUid = event.getUid();
 								cancelAppointmentInternal(session, eventUid);
 								LOG.warn("successfully cancelled appointment due to no remaining visitors " + event);
 								addEventToResult = false;
@@ -292,12 +293,12 @@ public abstract class AbstractOracleCalendarDao extends
 
 			return getAvailableAppointmentInternal(owner, block.getStartTime(), block.getEndTime(), session);
 		} catch (ParserException e) {
-			LOG.error("caught ParserException in getCalendar", e);
+			LOG.error("caught ParserException in getExistingAppointment for " + owner + " and " + block, e);
 			throw new OracleCalendarParserException("caught ParserException", agenda, e);
 		} catch (Api.StatusException e) {
-			LOG.error("caught Api.StatusException in getCalendar", e);
+			LOG.error("caught Api.StatusException in getExistingAppointment for " + owner + " and " + block, e);
 			invalidateSession = true;
-			throw new OracleCalendarDataAccessException("caught Exception", e);
+			throw new OracleCalendarDataAccessException("caught Api.StatusException in getExistingAppointment", e);
 		} finally {
 			doneWithSession(session, serverNode, invalidateSession);
 		}
@@ -365,11 +366,11 @@ public abstract class AbstractOracleCalendarDao extends
 			if(e.getStatus() == (Api.CSDK_STAT_SECUR_CANTBOOKATTENDEE | Api.CSDK_STATMODE_FATAL)) {
 				//TODO note that this exact error code will also be raised when attempting to create an appointment with resource that is already booked
 				LOG.error("createAppointment failed due to account not accepting invitations, visitor: " + visitor + ", owner: " + owner);
-				throw new VisitorDeclinedInvitationsException("scheduleAppointment failed due to visitor not accepting invitations: visitor: " + visitor);
+				throw new VisitorDeclinedInvitationsException("createAppointment failed due to visitor not accepting invitations: visitor: " + visitor);
 			}
 			invalidateSession = true;
-			LOG.error("caught Api.StatusException in scheduleAppoinment", e);
-			throw new OracleCalendarDataAccessException("caught Api.StatusException", e);
+			LOG.error("caught Api.StatusException in createAppoinment for " + owner + ", " + visitor + ", and " + block, e);
+			throw new OracleCalendarDataAccessException("caught Api.StatusException in createAppointment", e);
 		} finally {
 			doneWithSession(session, serverNode, invalidateSession);
 		}
@@ -381,16 +382,16 @@ public abstract class AbstractOracleCalendarDao extends
 	 */
 	@Override
 	public final void cancelAppointment(IScheduleOwner owner, VEvent event) {
+		Validate.notNull(event, "event argument cannot be null for cancelAppointment");
 		OracleCalendarServerNode serverNode = getOracleCalendarServerNode(owner.getCalendarAccount());
 		Session session = null;
 		boolean invalidateSession = false;
-		
+		Uid eventUid = event.getUid();
 		try {
 			session = getSession(owner.getCalendarAccount(), serverNode);
-			String eventUid = event.getUid().getValue();
 			cancelAppointmentInternal(session, eventUid);
 		} catch (Api.StatusException e) {
-			LOG.error("caught Api.StatusException", e);
+			LOG.error("caught Api.StatusException in cancelAppointment for " + owner + " and " + eventUid, e);
 			invalidateSession = true;
 			throw new OracleCalendarDataAccessException("caught Api.StatusException", e);
 		} finally {
@@ -404,15 +405,19 @@ public abstract class AbstractOracleCalendarDao extends
 	 * @param eventUid
 	 * @throws StatusException
 	 */
-	protected final void cancelAppointmentInternal(Session session, String eventUid) throws StatusException {
+	protected final void cancelAppointmentInternal(Session session, Uid eventUid) throws StatusException {
 		RequestResult requestResult = new RequestResult();
 		LOG.debug("calling deleteEvents for event uid: " + eventUid);
-		session.deleteEvents(Api.CSDK_FLAG_NONE, 
-				new String[] { eventUid }, 
+		if(eventUid != null) {
+			session.deleteEvents(Api.CSDK_FLAG_NONE, 
+				new String[] { eventUid.getValue() }, 
 				null, 
 				Api.CSDK_THISINSTANCE, 
 				requestResult);
-		LOG.debug("delete results: " + requestResult.toString());
+			LOG.debug("delete results: " + requestResult.toString());
+		} else {
+			LOG.error("skipping call to session.deleteEvents as eventUid argument is null");
+		}
 	}
 
 	/*
@@ -427,7 +432,7 @@ public abstract class AbstractOracleCalendarDao extends
 
 		Session session = null;
 		boolean invalidateSession = false;
-		
+		Uid eventUid = appointment.getUid();
 		try {
 			session = getSession(owner.getCalendarAccount(), serverNode);
 			
@@ -469,9 +474,9 @@ public abstract class AbstractOracleCalendarDao extends
 			
 			return appointment;
 		} catch (Api.StatusException e) {
-			LOG.error("caught Api.StatusException in scheduleAppoinment", e);
+			LOG.error("caught Api.StatusException in joinAppoinment for owner " + owner + " and " + visitor + " and " + eventUid, e);
 			invalidateSession = true;
-			throw new OracleCalendarDataAccessException("caught Api.StatusException", e);
+			throw new OracleCalendarDataAccessException("caught Api.StatusException in joinAppointment", e);
 		} finally {
 			doneWithSession(session, serverNode, invalidateSession);
 		}
@@ -489,7 +494,7 @@ public abstract class AbstractOracleCalendarDao extends
 
 		Session session = null;
 		boolean invalidateSession = false;
-		
+		Uid eventUid = appointment.getUid();
 		try {
 			session = getSession(owner.getCalendarAccount(), serverNode);
 
@@ -524,11 +529,11 @@ public abstract class AbstractOracleCalendarDao extends
 			return targetAppointment;
 			
 		} catch (Api.StatusException e) {
-			LOG.error("caught Api.StatusException in scheduleAppoinment", e);
+			LOG.error("caught Api.StatusException in leaveAppoinment for " + owner + " and " + visitor + " and " + eventUid, e);
 			invalidateSession = true;
 			throw new OracleCalendarDataAccessException("caught Api.StatusException", e);
 		} catch (ParserException e) {
-			LOG.error("caught ParserException in getCalendar", e);
+			LOG.error("caught ParserException in leaveAppointment for " + owner + " and " + visitor + " and " + eventUid, e);
 			throw new OracleCalendarParserException("caught ParserException", e);
 		} finally {
 			doneWithSession(session, serverNode, invalidateSession);
@@ -574,7 +579,7 @@ public abstract class AbstractOracleCalendarDao extends
 			for(Object component : events) {
 				VEvent event = (VEvent) component;
 				if(this.oracleEventUtils.willEventCauseConflict(owner.getCalendarAccount(), event)) {
-					throw new ConflictExistsException("an appointment already exists for " + block);
+					throw new ConflictExistsException("a conflict exists for " + block + " in the schedule for " + owner);
 				} 
 			}
 		} else {
@@ -665,10 +670,10 @@ public abstract class AbstractOracleCalendarDao extends
 					LOG.debug("no existing reflections to remove");
 				}
 			} catch (Api.StatusException e) {
-				LOG.error("caught Api.StatusException in reflectAvailableSchedule", e);
+				LOG.error("caught Api.StatusException in reflectAvailableSchedule for owner " + owner, e);
 				throw new OracleCalendarDataAccessException("reflectAvailableSchedule failed for owner " + owner, e);
 			} catch (IOException e) {
-				LOG.error("failed to parse existing reflection events for " + owner, e);
+				LOG.error("caught IOException in reflectAvailableSchedule for " + owner, e);
 				throw new OracleCalendarParserException("reflectAvailableSchedule failed for owner " + owner, e);
 			} catch (ParserException e) {
 				LOG.error("failed to parse existing reflection events for " + owner, e);

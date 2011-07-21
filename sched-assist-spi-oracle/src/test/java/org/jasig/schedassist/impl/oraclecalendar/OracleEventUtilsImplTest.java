@@ -270,36 +270,20 @@ public class OracleEventUtilsImplTest {
 	}
 	
 	/**
-	 * @throws URISyntaxException 
 	 * 
+	 * @throws URISyntaxException
 	 */
-	//@Test
-	public void testAttendeeMatchesPersonOracleGuidShortCircuit() throws URISyntaxException {
+	@Test
+	public void testAttendeeMatchesPersonNullEmailAddress() throws URISyntaxException {
 		Attendee attendee = new Attendee("mailto:person@wisc.edu");
 		attendee.getParameters().add(new Cn("SOME PERSON"));
-		
+
 		OracleCalendarUserAccount calendarAccount = new OracleCalendarUserAccount();
-		calendarAccount.setEmailAddress("person@wisc.edu");
 		calendarAccount.setDisplayName("SOME PERSON");
 		calendarAccount.setSurname("PERSON");
 		calendarAccount.setGivenName("SOME");
-		
-		Assert.assertTrue(this.eventUtils.attendeeMatchesPerson(attendee, calendarAccount));
-		
-		calendarAccount.setOracleGuid("0123456789ABCDEFGH");
-		
-		// first set the guid wrong
-		XParameter wrong = new XParameter(OracleEventUtilsImpl.ORACLE_GUID, "0123456789ABCDEFG");
-		attendee.getParameters().add(wrong);
-		
+
 		Assert.assertFalse(this.eventUtils.attendeeMatchesPerson(attendee, calendarAccount));
-		
-		Assert.assertTrue(attendee.getParameters().remove(wrong));
-		
-		XParameter right = new XParameter(OracleEventUtilsImpl.ORACLE_GUID, "0123456789ABCDEFGH");
-		attendee.getParameters().add(right);
-		
-		Assert.assertTrue(this.eventUtils.attendeeMatchesPerson(attendee, calendarAccount));
 	}
 	
 	/**

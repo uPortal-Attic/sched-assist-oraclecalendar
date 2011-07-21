@@ -175,7 +175,7 @@ public abstract class AbstractOracleCalendarAccount extends AbstractCalendarAcco
 	 */
 	@Override
 	public final boolean isEligible() {
-		return StringUtils.isNotBlank(this.ctcalxitemid);
+		return StringUtils.isNotBlank(this.ctcalxitemid) && StringUtils.isNotBlank(getEmailAddress());
 	}
 	/**
 	 * Ignored, no-op.

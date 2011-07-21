@@ -141,27 +141,17 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 			return false;
 		}
 		
-		// test for Oracle GUID
-		/*
-		String accountGuid = calendarAccount.getAttributeValue(AbstractOracleCalendarAccount.ORACLE_GUID_ATTRIBUTE);
-		if(accountGuid != null) {
-			Parameter guidParameter = attendee.getParameter(ORACLE_GUID);
-			if(guidParameter != null && accountGuid.equals(guidParameter.getValue())) {
-				if(LOG.isDebugEnabled()) {
-					LOG.debug("short circuit on Oracle GUID match");
-				}
-				return true;
-			}
-		}
-		*/
-		
 		Cn cn = (Cn) attendee.getParameter(Cn.CN);
 		if(null == cn) {
 			return false;
 		}
 		boolean cnResult = cn.getValue().equals(calendarAccount.getDisplayName());
-
-		URI mailTo = emailToURI(calendarAccount.getEmailAddress());
+		final String emailAddress = calendarAccount.getEmailAddress();
+		if(null == emailAddress) {
+			LOG.warn("returning false for calendarAccount with null email address in attendeeMatchesPerson: " + calendarAccount);
+			return false;
+		}
+		URI mailTo = emailToURI(emailAddress);
 		boolean mailResult = attendee.getValue().equals(mailTo.toString());
 
 		return cnResult && mailResult;
