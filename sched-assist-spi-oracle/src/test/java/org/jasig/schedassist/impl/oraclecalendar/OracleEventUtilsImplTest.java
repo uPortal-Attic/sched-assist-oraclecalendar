@@ -352,6 +352,67 @@ public class OracleEventUtilsImplTest {
 	 * @throws Exception
 	 */
 	@Test
+	public void testConstructAvailableAppointmentBlockOverridesLocation() throws Exception {
+		// construct visitor
+		OracleCalendarUserAccount calendarAccount = new OracleCalendarUserAccount();
+		calendarAccount.setEmailAddress("somevisitor@wisc.edu");
+		calendarAccount.setDisplayName("Some A Visitor");
+		calendarAccount.setSurname("Visitor");
+		calendarAccount.setGivenName("Some");
+		MockScheduleVisitor visitor = new MockScheduleVisitor(calendarAccount);
+		
+		// construct owner
+		OracleCalendarUserAccount calendarAccount2 = new OracleCalendarUserAccount();
+		calendarAccount2.setEmailAddress("someowner@wisc.edu");
+		calendarAccount2.setDisplayName("Some A Owner");
+		calendarAccount2.setSurname("Owner");
+		calendarAccount2.setGivenName("Some");
+		MockScheduleOwner owner = new MockScheduleOwner(calendarAccount2, 1);
+		owner.setPreference(Preferences.LOCATION, "Owner's office");
+		
+		VEvent availableAppointment = this.eventUtils.constructAvailableAppointment(
+				AvailableBlockBuilder.createBlock("20091006-1300", "20091006-1330", 1, "alternate location"),
+				owner, 
+				"OWNER-GUID-123",
+				visitor, 
+				"VISITOR-GUID-123",
+				"test event description");
+		
+		Assert.assertEquals("Appointment with Some Visitor", availableAppointment.getSummary().getValue());
+		Assert.assertEquals("test event description", availableAppointment.getDescription().getValue());
+		Assert.assertEquals("alternate location", availableAppointment.getLocation().getValue());
+		Assert.assertEquals(makeDateTime("20091006-1300"), availableAppointment.getStartDate().getDate());
+		Assert.assertEquals(makeDateTime("20091006-1330"), availableAppointment.getEndDate().getDate());
+		Assert.assertEquals("TRUE", availableAppointment.getProperty(SchedulingAssistantAppointment.AVAILABLE_APPOINTMENT).getValue());
+		Assert.assertEquals("1", availableAppointment.getProperty(VisitorLimit.VISITOR_LIMIT).getValue());
+		Assert.assertEquals(Status.VEVENT_CONFIRMED, availableAppointment.getProperty(Status.STATUS));
+		PropertyList attendeePropertyList = availableAppointment.getProperties(Attendee.ATTENDEE);
+		for(Object o : attendeePropertyList) {
+			Property attendee = (Property) o;
+			Assert.assertEquals(PartStat.ACCEPTED, attendee.getParameter(PartStat.PARTSTAT));
+			Assert.assertEquals(CuType.INDIVIDUAL, attendee.getParameter(CuType.CUTYPE));
+			Assert.assertEquals(Rsvp.FALSE, attendee.getParameter(Rsvp.RSVP));
+			Parameter appointmentRole = attendee.getParameter(AppointmentRole.APPOINTMENT_ROLE);
+			if("VISITOR".equals(appointmentRole.getValue())) {
+				Assert.assertEquals("mailto:somevisitor@wisc.edu", attendee.getValue());
+				Assert.assertEquals("VISITOR-GUID-123", attendee.getParameter("X-ORACLE-GUID").getValue());
+				Assert.assertEquals("Some Visitor", attendee.getParameter("CN").getValue());
+			} else if ("OWNER".equals(appointmentRole.getValue())) {
+				Assert.assertEquals("mailto:someowner@wisc.edu", attendee.getValue());
+				Assert.assertEquals("OWNER-GUID-123", attendee.getParameter("X-ORACLE-GUID").getValue());
+				Assert.assertEquals("Some Owner", attendee.getParameter("CN").getValue());
+			} else {
+				Assert.fail("unexpected value for appointment role: " + appointmentRole.getValue());
+			}
+			
+		}
+	}
+	
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	@Test
 	public void testConstructAvailableAppointmentNullGuids() throws Exception {
 		// construct visitor
 		OracleCalendarUserAccount calendarAccount = new OracleCalendarUserAccount();
