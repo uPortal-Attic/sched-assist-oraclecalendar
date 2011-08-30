@@ -286,10 +286,16 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 			event.getProperties().add(Clazz.PRIVATE);
 			event.getProperties().add(new XProperty("X-ORACLE-CLASS", "NORMAL"));
 
-			// set owner's preferred location (if set)
-			final String preferredLocation = owner.getPreferredLocation();
-			if(StringUtils.isNotBlank(preferredLocation)) {
-				event.getProperties().add(new Location(preferredLocation));
+			// check if block overrides meeting location
+			final String blockMeetingLocationOverride = block.getMeetingLocation();
+			if(StringUtils.isNotBlank(blockMeetingLocationOverride)) {
+				event.getProperties().add(new Location(blockMeetingLocationOverride));
+			} else {
+				// set owner's preferred location (if set)
+				final String preferredLocation = owner.getPreferredLocation();
+				if(StringUtils.isNotBlank(preferredLocation)) {
+					event.getProperties().add(new Location(preferredLocation));
+				}
 			}
 			// add CONFIRMED status
 			event.getProperties().add(Status.VEVENT_CONFIRMED);
