@@ -26,7 +26,6 @@ import javax.naming.directory.Attributes;
 
 import org.easymock.EasyMock;
 import org.jasig.schedassist.model.ICalendarAccount;
-import org.jasig.schedassist.model.IdentityUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -86,7 +85,6 @@ public class OracleCalendarUserAccountAttributesMapperTest {
 		Assert.assertEquals("FIRST", user.getGivenName());
 		Assert.assertEquals("LAST", user.getSurname());
 		Assert.assertEquals("0123456789", user.getOracleGuid());
-		Assert.assertFalse(IdentityUtils.isAdvisor(user));
 		
 		EasyMock.verify(mockAttributeIds, mockAttributes, mockGUIDSource);
 	}
@@ -146,7 +144,6 @@ public class OracleCalendarUserAccountAttributesMapperTest {
 		Assert.assertEquals("FIRST", user.getGivenName());
 		Assert.assertEquals("LAST", user.getSurname());
 		Assert.assertEquals("0123456789", user.getOracleGuid());
-		Assert.assertTrue(IdentityUtils.isAdvisor(user));
 		
 		EasyMock.verify(mockAttributeIds, mockAttributes, mockGUIDSource);
 	}
@@ -203,7 +200,6 @@ public class OracleCalendarUserAccountAttributesMapperTest {
 		Assert.assertEquals("LAST", user.getSurname());
 		Assert.assertEquals("01234567", user.getAttributes().get("wisceduisisstudentemplid"));
 		Assert.assertEquals("0123456789", user.getOracleGuid());
-		Assert.assertFalse(IdentityUtils.isAdvisor(user));
 		
 		EasyMock.verify(mockAttributeIds, mockAttributes, mockGUIDSource);
 	}

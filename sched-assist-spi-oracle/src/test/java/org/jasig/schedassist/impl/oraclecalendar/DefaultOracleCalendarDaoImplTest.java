@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import net.fortuna.ical4j.data.ParserException;
@@ -44,19 +42,19 @@ import net.fortuna.ical4j.model.property.Uid;
 import oracle.calendar.sdk.Api.StatusException;
 import oracle.calendar.sdk.Session;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.time.DateUtils;
+import org.jasig.schedassist.NullAffiliationSourceImpl;
 import org.jasig.schedassist.model.AppointmentRole;
-import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
 import org.jasig.schedassist.model.AvailableSchedule;
 import org.jasig.schedassist.model.CommonDateOperations;
 import org.jasig.schedassist.model.InputFormatException;
+import org.jasig.schedassist.model.Preferences;
+import org.jasig.schedassist.model.SchedulingAssistantAppointment;
+import org.jasig.schedassist.model.VisitorLimit;
 import org.jasig.schedassist.model.mock.MockScheduleOwner;
 import org.jasig.schedassist.model.mock.MockScheduleVisitor;
-import org.jasig.schedassist.model.Preferences;
-import org.jasig.schedassist.model.VisitorLimit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,7 +77,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class DefaultOracleCalendarDaoImplTest {
 
 	private DefaultOracleCalendarDaoImpl oracleCalendarDao;
-	private OracleEventUtilsImpl oracleEventUtils = new OracleEventUtilsImpl();
+	private OracleEventUtilsImpl oracleEventUtils = new OracleEventUtilsImpl(new NullAffiliationSourceImpl());
 	/**
 	 * @param oracleCalendarDao the oracleCalendarDao to set
 	 */
@@ -156,72 +154,6 @@ public class DefaultOracleCalendarDaoImplTest {
 		Assert.assertNotNull(ownerAttendee);
 		Assert.assertEquals(AppointmentRole.OWNER, ownerAttendee.getParameter(AppointmentRole.APPOINTMENT_ROLE));
 		Assert.assertEquals("testCreateEvent", lookupResult.getDescription().getValue());
-		
-		
-		oracleCalendarDao.cancelAppointment(owner, event);
-		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
-		Assert.assertNull(lookupResultAfterCancel);
-	}
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testCreateAndCancelMimicAdvisor() throws Exception {
-		// construct owner from traditional user account
-		Map<String, String> attributes = new HashMap<String, String>();
-		attributes.put("wisceduadvisorflag", "Y");
-		OracleCalendarUserAccount user = new OracleCalendarUserAccount(attributes);
-		user.setUsername("npblair");
-		user.setCtcalxitemid("20000:01182");
-		user.setDisplayName("NICHOLAS P BLAIR");
-		user.setEmailAddress("nblair@doit.wisc.edu");
-		user.setGivenName("NICHOLAS");
-		user.setSurname("BLAIR");
-		
-		MockScheduleOwner owner = new MockScheduleOwner(user, 1);
-		owner.setPreference(Preferences.MEETING_PREFIX, "prefix");
-		owner.setPreference(Preferences.LOCATION, "meeting room");
-		
-		// construct visitor from traditional user account
-		Map<String, String> visitorAttributes = new HashMap<String, String>();
-		visitorAttributes.put("wiscedustudentid", "90123456789");
-		OracleCalendarUserAccount visitorUser = new OracleCalendarUserAccount(visitorAttributes);
-		visitorUser.setUsername("jstalnak");
-		visitorUser.setCtcalxitemid("20000:01220");
-		visitorUser.setDisplayName("JAMES G STALNAKER");
-		visitorUser.setEmailAddress("jstalnak@doit.wisc.edu");
-		visitorUser.setGivenName("JAMES");
-		visitorUser.setSurname("STALNAKER");
-		MockScheduleVisitor visitor = new MockScheduleVisitor(visitorUser);
-		
-		Date startDate = DateUtils.truncate(new Date(), java.util.Calendar.MINUTE);
-		Date endDate = DateUtils.addHours(startDate, 1);
-		final DateTime ical4jstart = new DateTime(startDate);
-		final DateTime ical4jend = new DateTime(endDate);
-		AvailableBlock block = AvailableBlockBuilder.createBlock(startDate, endDate, 1);
-		VEvent event = oracleCalendarDao.createAppointment(visitor, owner, block, "testCreateEvent");
-		Assert.assertNotNull(event);
-		
-		VEvent lookupResult = oracleCalendarDao.getExistingAppointment(owner, block);
-		Assert.assertNotNull(lookupResult);
-		Assert.assertEquals(ical4jstart, lookupResult.getStartDate().getDate());
-		Assert.assertEquals(ical4jend, lookupResult.getEndDate().getDate());
-		Assert.assertEquals(SchedulingAssistantAppointment.TRUE, lookupResult.getProperty(SchedulingAssistantAppointment.AVAILABLE_APPOINTMENT));
-		Assert.assertEquals(1, Integer.parseInt(lookupResult.getProperty(VisitorLimit.VISITOR_LIMIT).getValue()));
-		Assert.assertEquals(2, lookupResult.getProperties(Attendee.ATTENDEE).size());
-		Property visitorAttendee = this.oracleEventUtils.getAttendeeForUserFromEvent(lookupResult, visitor.getCalendarAccount());
-		Assert.assertNotNull(visitorAttendee);
-		Assert.assertEquals(AppointmentRole.VISITOR, visitorAttendee.getParameter(AppointmentRole.APPOINTMENT_ROLE));
-		Property ownerAttendee = this.oracleEventUtils.getAttendeeForUserFromEvent(lookupResult, owner.getCalendarAccount());
-		Assert.assertNotNull(ownerAttendee);
-		Assert.assertEquals(AppointmentRole.OWNER, ownerAttendee.getParameter(AppointmentRole.APPOINTMENT_ROLE));
-		Assert.assertEquals("testCreateEvent [UW Student ID: 90123456789]", lookupResult.getDescription().getValue());
-		Parameter personalNotes = ownerAttendee.getParameter(OracleEventUtilsImpl.ORACLE_PERSONAL_COMMENTS);
-		Assert.assertNotNull(personalNotes);
-		byte[] valueDecoded = Base64.decodeBase64(personalNotes.getValue().getBytes());
-		Assert.assertEquals("DARS reports for JAMES STALNAKER: https://dars.services.wisc.edu/?campus=90123456789", new String(valueDecoded));
 		
 		
 		oracleCalendarDao.cancelAppointment(owner, event);

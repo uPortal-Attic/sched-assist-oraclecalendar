@@ -19,6 +19,10 @@
 
 package org.jasig.schedassist.impl.oraclecalendar;
 
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -52,22 +56,25 @@ import net.fortuna.ical4j.util.CompatibilityHints;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.time.DateUtils;
+import org.easymock.EasyMock;
+import org.jasig.schedassist.IAffiliationSource;
+import org.jasig.schedassist.NullAffiliationSourceImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailabilityReflection;
-import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
 import org.jasig.schedassist.model.AvailableSchedule;
 import org.jasig.schedassist.model.CommonDateOperations;
 import org.jasig.schedassist.model.DefaultEventUtilsImpl;
 import org.jasig.schedassist.model.InputFormatException;
-import org.jasig.schedassist.model.mock.MockCalendarAccount;
-import org.jasig.schedassist.model.mock.MockScheduleOwner;
-import org.jasig.schedassist.model.mock.MockScheduleVisitor;
 import org.jasig.schedassist.model.Preferences;
+import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.VisibleSchedule;
 import org.jasig.schedassist.model.VisibleScheduleBuilder;
 import org.jasig.schedassist.model.VisitorLimit;
+import org.jasig.schedassist.model.mock.MockCalendarAccount;
+import org.jasig.schedassist.model.mock.MockScheduleOwner;
+import org.jasig.schedassist.model.mock.MockScheduleVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -80,7 +87,7 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class OracleEventUtilsImplTest {
 
-	private OracleEventUtilsImpl eventUtils = new OracleEventUtilsImpl();
+	private OracleEventUtilsImpl eventUtils = new OracleEventUtilsImpl(new NullAffiliationSourceImpl());
 	/**
 	 * 
 	 * @throws Exception
@@ -618,7 +625,13 @@ public class OracleEventUtilsImplTest {
 		MockScheduleOwner owner = new MockScheduleOwner(calendarAccount2, 1);
 		owner.setPreference(Preferences.LOCATION, "Owner's office");
 		
-		VEvent availableAppointment = this.eventUtils.constructAvailableAppointment(
+		// need to construct an AffiliationSource that will mock the "advisor" scenario
+		IAffiliationSource affiliationSource = EasyMock.createMock(IAffiliationSource.class);
+		expect(affiliationSource.doesAccountHaveAffiliation(calendarAccount2, "advisor")).andReturn(true);
+		replay(affiliationSource);
+		OracleEventUtilsImpl alternate = new OracleEventUtilsImpl(affiliationSource);
+		
+		VEvent availableAppointment = alternate.constructAvailableAppointment(
 				AvailableBlockBuilder.createBlock("20091006-1300", "20091006-1330"),
 				owner, 
 				null,
@@ -657,6 +670,7 @@ public class OracleEventUtilsImplTest {
 				Assert.fail("unexpected value for appointment role: " + appointmentRole.getValue());
 			}
 		}
+		verify(affiliationSource);
 	}
 	
 	/**

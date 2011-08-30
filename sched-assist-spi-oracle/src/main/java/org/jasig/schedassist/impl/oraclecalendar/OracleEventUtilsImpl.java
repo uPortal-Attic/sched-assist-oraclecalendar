@@ -54,8 +54,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang.time.FastDateFormat;
+import org.jasig.schedassist.IAffiliationSource;
 import org.jasig.schedassist.model.AppointmentRole;
-import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
 import org.jasig.schedassist.model.AvailableVersion;
@@ -63,8 +63,8 @@ import org.jasig.schedassist.model.DefaultEventUtilsImpl;
 import org.jasig.schedassist.model.ICalendarAccount;
 import org.jasig.schedassist.model.IScheduleOwner;
 import org.jasig.schedassist.model.IScheduleVisitor;
-import org.jasig.schedassist.model.IdentityUtils;
 import org.jasig.schedassist.model.Preferences;
+import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.VisitorLimit;
 
 /**
@@ -127,6 +127,13 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 	public static final FastDateFormat FASTDATEFORMAT = FastDateFormat.getInstance(ICAL_DATETIME_FORMAT, 
 			TimeZone.getTimeZone("UTC"));
 
+	/**
+	 * 
+	 * @param affiliationSource
+	 */
+	public OracleEventUtilsImpl(IAffiliationSource affiliationSource) {
+		super(affiliationSource);
+	}
 	/*
 	 * (non-Javadoc)
 	 * @see org.jasig.schedassist.model.DefaultEventUtilsImpl#attendeeMatchesPerson(net.fortuna.ical4j.model.Property, org.jasig.schedassist.model.ICalendarAccount)
@@ -188,7 +195,6 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 	 * The eventDescription argument will be added to the DESCRIPTION of the event. If the owner is detected as an academic advisor, and 
 	 * the visitor is a student, the student's "wiscedustudentid" value will be appended to the DESCRIPTION.
 	 * 
-	 * @see IdentityUtils#isAdvisor(CalendarUser)
 	 * @param block the selected {@link AvailableBlock} 
 	 * @param owner the owner of the appointment
 	 * @param ownerGuid the Oracle GUID for the owner (may be null)
@@ -254,7 +260,7 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 				StringBuilder descriptionBuilder = new StringBuilder();
 				descriptionBuilder.append(eventDescription);
 				// if the owner is an advisor
-				if(IdentityUtils.isAdvisor(owner.getCalendarAccount())) {
+				if(getAffiliationSource().doesAccountHaveAffiliation(owner.getCalendarAccount(), "advisor")) {
 					// and the visitor is a student
 					String studentId = visitor.getCalendarAccount().getAttributeValue("wiscedustudentid");
 					if(null != studentId) {

@@ -21,6 +21,7 @@
 package org.jasig.schedassist.web.admin;
 
 import org.apache.commons.lang.StringUtils;
+import org.jasig.schedassist.IAffiliationSource;
 import org.jasig.schedassist.ICalendarAccountDao;
 import org.jasig.schedassist.impl.oraclecalendar.OracleGUIDSource;
 import org.jasig.schedassist.impl.owner.OwnerDao;
@@ -30,7 +31,6 @@ import org.jasig.schedassist.impl.visitor.VisitorDao;
 import org.jasig.schedassist.model.ICalendarAccount;
 import org.jasig.schedassist.model.IDelegateCalendarAccount;
 import org.jasig.schedassist.model.IScheduleOwner;
-import org.jasig.schedassist.model.IdentityUtils;
 import org.jasig.schedassist.model.PublicProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,6 +55,7 @@ public class AccountDetailsController {
 	private VisitorDao visitorDao;
 	private OwnerDao ownerDao;
 	private PublicProfileDao publicProfileDao;
+	private IAffiliationSource affiliationSource;
 	/**
 	 * @param calendarAccountDao the calendarAccountDao to set
 	 */
@@ -85,6 +86,13 @@ public class AccountDetailsController {
 	}
 
 	/**
+	 * @param affiliationSource the affiliationSource to set
+	 */
+	@Autowired
+	public void setAffiliationSource(IAffiliationSource affiliationSource) {
+		this.affiliationSource = affiliationSource;
+	}
+	/**
 	 * @param oracleGUIDSource the oracleGUIDSource to set
 	 */
 	@Autowired(required=false)
@@ -105,7 +113,7 @@ public class AccountDetailsController {
 			if(null != account) {
 				model.addAttribute("isDelegate", account instanceof IDelegateCalendarAccount);
 				model.addAttribute("calendarAccount", account);
-				model.addAttribute("isAdvisor", IdentityUtils.isAdvisor(account));
+				model.addAttribute("isAdvisor",  affiliationSource.doesAccountHaveAffiliation(account, "advisor"));
 				model.addAttribute("calendarAccountAttributes", account.getAttributes().entrySet());
 				if(null != this.oracleGUIDSource) {
 					String oracleGUID = this.oracleGUIDSource.getOracleGUID(account);

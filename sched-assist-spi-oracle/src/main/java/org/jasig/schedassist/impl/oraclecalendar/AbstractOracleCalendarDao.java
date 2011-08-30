@@ -55,6 +55,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jasig.schedassist.ConflictExistsException;
 import org.jasig.schedassist.ICalendarDataDao;
+import org.jasig.schedassist.NullAffiliationSourceImpl;
 import org.jasig.schedassist.SchedulingException;
 import org.jasig.schedassist.impl.events.AutomaticAppointmentCancellationEvent;
 import org.jasig.schedassist.impl.events.AutomaticAppointmentCancellationEvent.Reason;
@@ -103,7 +104,7 @@ public abstract class AbstractOracleCalendarDao extends
 	protected final Log LOG = LogFactory.getLog(this.getClass());
 	
 	private Map<String, OracleCalendarServerNode> serverNodes = new HashMap<String, OracleCalendarServerNode>();
-	private OracleEventUtilsImpl oracleEventUtils = new OracleEventUtilsImpl();
+	private OracleEventUtilsImpl oracleEventUtils = new OracleEventUtilsImpl(new NullAffiliationSourceImpl());
 	private OracleGUIDSource oracleGUIDSource;
 	private ApplicationEventPublisher applicationEventPublisher;
 	
