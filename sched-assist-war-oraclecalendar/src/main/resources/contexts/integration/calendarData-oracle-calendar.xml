@@ -43,7 +43,10 @@
 	<!-- end section 3: calendarDao -->
 	
 	<!-- begin section 4: available service beans -->
-	<bean id="eventUtils" class="org.jasig.schedassist.impl.oraclecalendar.OracleEventUtilsImpl"/>
+	<bean id="affiliationSource" class="org.jasig.schedassist.NullAffiliationSourceImpl"/>
+	<bean id="eventUtils" class="org.jasig.schedassist.impl.oraclecalendar.OracleEventUtilsImpl">
+		<constructor-arg ref="affiliationSource"/>
+	</bean>
 	<bean id="visibleScheduleBuilder" class="org.jasig.schedassist.model.VisibleScheduleBuilder">
 		<property name="eventUtils" ref="eventUtils"/>
 	</bean>	
