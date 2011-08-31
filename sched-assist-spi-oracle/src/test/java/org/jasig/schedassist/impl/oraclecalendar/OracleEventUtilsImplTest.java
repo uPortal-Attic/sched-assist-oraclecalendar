@@ -59,6 +59,7 @@ import org.apache.commons.lang.time.DateUtils;
 import org.easymock.EasyMock;
 import org.jasig.schedassist.IAffiliationSource;
 import org.jasig.schedassist.NullAffiliationSourceImpl;
+import org.jasig.schedassist.model.AffiliationImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailabilityReflection;
 import org.jasig.schedassist.model.AvailableBlock;
@@ -627,7 +628,7 @@ public class OracleEventUtilsImplTest {
 		
 		// need to construct an AffiliationSource that will mock the "advisor" scenario
 		IAffiliationSource affiliationSource = EasyMock.createMock(IAffiliationSource.class);
-		expect(affiliationSource.doesAccountHaveAffiliation(calendarAccount2, "advisor")).andReturn(true);
+		expect(affiliationSource.doesAccountHaveAffiliation(calendarAccount2, AffiliationImpl.ADVISOR)).andReturn(true);
 		replay(affiliationSource);
 		OracleEventUtilsImpl alternate = new OracleEventUtilsImpl(affiliationSource);
 		

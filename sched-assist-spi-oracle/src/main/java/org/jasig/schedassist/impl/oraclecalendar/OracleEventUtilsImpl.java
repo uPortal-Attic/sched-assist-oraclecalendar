@@ -55,6 +55,7 @@ import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jasig.schedassist.IAffiliationSource;
+import org.jasig.schedassist.model.AffiliationImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
@@ -260,7 +261,7 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 				StringBuilder descriptionBuilder = new StringBuilder();
 				descriptionBuilder.append(eventDescription);
 				// if the owner is an advisor
-				if(getAffiliationSource().doesAccountHaveAffiliation(owner.getCalendarAccount(), "advisor")) {
+				if(getAffiliationSource().doesAccountHaveAffiliation(owner.getCalendarAccount(), AffiliationImpl.ADVISOR)) {
 					// and the visitor is a student
 					String studentId = visitor.getCalendarAccount().getAttributeValue("wiscedustudentid");
 					if(null != studentId) {
