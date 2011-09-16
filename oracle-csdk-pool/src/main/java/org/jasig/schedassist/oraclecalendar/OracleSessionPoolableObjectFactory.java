@@ -118,12 +118,6 @@ public class OracleSessionPoolableObjectFactory extends
 			if(LOG.isDebugEnabled()) {
 				LOG.debug("finished disconnect for key " + key + ", session " + session);
 			}
-			
-			try {
-				session.dispose();
-			} catch (Throwable e) {
-				LOG.warn("dispose threw Throwable on dispose for key " + key, e);
-			}
 		}
 		else {
 			if(LOG.isDebugEnabled()) {
