@@ -41,7 +41,6 @@ import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.util.CompatibilityHints;
 import oracle.calendar.sdk.Api;
 import oracle.calendar.sdk.Api.StatusException;
@@ -62,7 +61,6 @@ import org.jasig.schedassist.impl.events.AutomaticAppointmentCancellationEvent.R
 import org.jasig.schedassist.impl.events.AutomaticAttendeeRemovalEvent;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailabilityReflection;
-import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableSchedule;
 import org.jasig.schedassist.model.AvailableVersion;
@@ -71,6 +69,7 @@ import org.jasig.schedassist.model.DefaultEventUtilsImpl;
 import org.jasig.schedassist.model.ICalendarAccount;
 import org.jasig.schedassist.model.IScheduleOwner;
 import org.jasig.schedassist.model.IScheduleVisitor;
+import org.jasig.schedassist.model.SchedulingAssistantAppointment;
 import org.jasig.schedassist.model.VisitorLimit;
 import org.jasig.schedassist.oraclecalendar.OracleCalendarSDKSupport;
 import org.jasig.schedassist.oraclecalendar.OracleCalendarServerNode;
@@ -330,11 +329,7 @@ public abstract class AbstractOracleCalendarDao extends
 					visitorGuid,
 					eventDescription);
 
-			ComponentList list = new ComponentList();
-			list.add(event);
-			Calendar calendar = new Calendar(list);
-			calendar.getProperties().add(DefaultEventUtilsImpl.AVAILABLE_PROD_ID);
-			calendar.getProperties().add(Version.VERSION_2_0);
+			Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
 			RequestResult requestResults = new RequestResult();
 			if(LOG.isDebugEnabled()) {
@@ -348,11 +343,7 @@ public abstract class AbstractOracleCalendarDao extends
 			String eventUID = requestResults.getFirstResult().getUID();
 			event.getProperties().add(new Uid(eventUID));
 
-			list = new ComponentList();
-			list.add(event);
-			calendar = new Calendar(list);
-			calendar.getProperties().add(DefaultEventUtilsImpl.AVAILABLE_PROD_ID);
-			calendar.getProperties().add(Version.VERSION_2_0);
+			calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
 			if(LOG.isDebugEnabled()) {
 				LOG.debug("attempting second store, calendar: " + calendar.toString());
@@ -455,11 +446,7 @@ public abstract class AbstractOracleCalendarDao extends
 			}
 
 			appointment.getProperties().add(visitorAttendee);
-			ComponentList list = new ComponentList();
-			list.add(appointment);
-			Calendar calendar = new Calendar(list);
-			calendar.getProperties().add(DefaultEventUtilsImpl.AVAILABLE_PROD_ID);
-			calendar.getProperties().add(Version.VERSION_2_0);
+			Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(appointment);
 
 			RequestResult requestResults = new RequestResult();
 			session.storeEvents(getOracleModifyFlags(), calendar.toString(), requestResults);
@@ -548,11 +535,7 @@ public abstract class AbstractOracleCalendarDao extends
 	 * @throws StatusException 
 	 */
 	protected void replaceEventInternal(Session session, VEvent event) throws StatusException {
-		ComponentList list = new ComponentList();
-		list.add(event);
-		Calendar calendar = new Calendar(list);
-		calendar.getProperties().add(DefaultEventUtilsImpl.AVAILABLE_PROD_ID);
-		calendar.getProperties().add(Version.VERSION_2_0);
+		Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
 		RequestResult requestResults = new RequestResult();
 		session.storeEvents(getOracleReplaceFlags(), calendar.toString(), requestResults);
@@ -609,12 +592,18 @@ public abstract class AbstractOracleCalendarDao extends
 
 				purgeAvailableScheduleReflections(owner, startDate, endDate);
 
-				Calendar newReflections = this.oracleEventUtils.convertScheduleForReflection(schedule);
-				RequestResult storeResult = new RequestResult();
-				session.storeEvents(getOracleCreateReflectionFlags(), newReflections.toString(), storeResult);
-				if(LOG.isDebugEnabled()) {
-					LOG.debug("store new reflections complete: " + storeResult);
+				List<Calendar> newReflections = this.oracleEventUtils.convertScheduleForReflection(schedule);
+				// oracleEventUtils overrides this method to only return 1 calendar
+				if(!newReflections.isEmpty()) {
+					RequestResult storeResult = new RequestResult();
+					session.storeEvents(getOracleCreateReflectionFlags(), newReflections.toString(), storeResult);
+					if(LOG.isDebugEnabled()) {
+						LOG.debug("store new reflections complete: " + storeResult);
+					}
+				} else {
+					LOG.debug("store new reflections skipped as schedule is now empty");
 				}
+				
 			} catch (Api.StatusException e) {
 				LOG.error("caught Api.StatusException in reflectAvailableSchedule", e);
 				throw new OracleCalendarDataAccessException("reflectAvailableSchedule failed for owner " + owner, e);

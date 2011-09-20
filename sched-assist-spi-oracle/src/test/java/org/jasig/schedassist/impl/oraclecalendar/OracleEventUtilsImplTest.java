@@ -1279,8 +1279,9 @@ public class OracleEventUtilsImplTest {
 		
 		// expand to 30 minute blocks first
 		blocks = AvailableBlockBuilder.expand(blocks, 30);
-		net.fortuna.ical4j.model.Calendar calendar = this.eventUtils.convertScheduleForReflection(new AvailableSchedule(blocks));
-		
+		List<net.fortuna.ical4j.model.Calendar> calendars = this.eventUtils.convertScheduleForReflection(new AvailableSchedule(blocks));
+		Assert.assertEquals(1, calendars.size());
+		net.fortuna.ical4j.model.Calendar calendar = calendars.get(0); 
 		Assert.assertEquals(3, calendar.getComponents().size());
 		ComponentList components = calendar.getComponents(VEvent.VEVENT);
 		for(Object o : components) {

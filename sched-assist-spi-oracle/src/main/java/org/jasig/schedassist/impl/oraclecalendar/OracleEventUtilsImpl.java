@@ -22,8 +22,11 @@ package org.jasig.schedassist.impl.oraclecalendar;
 import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TimeZone;
 
@@ -47,6 +50,7 @@ import net.fortuna.ical4j.model.property.Location;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.Status;
 import net.fortuna.ical4j.model.property.Summary;
+import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.model.property.XProperty;
 
 import org.apache.commons.codec.binary.Base64;
@@ -59,6 +63,7 @@ import org.jasig.schedassist.model.AffiliationImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
+import org.jasig.schedassist.model.AvailableSchedule;
 import org.jasig.schedassist.model.AvailableVersion;
 import org.jasig.schedassist.model.DefaultEventUtilsImpl;
 import org.jasig.schedassist.model.ICalendarAccount;
@@ -422,6 +427,33 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 		return attendees;
 	}
 
+	/**
+	 * We don't use RDATE with Oracle Calendar to store reflections; this implementation returns at most
+	 * 1 Calendar with each block as a separate event
+	 *  (non-Javadoc)
+	 * @see org.jasig.schedassist.model.DefaultEventUtilsImpl#convertScheduleForReflection(org.jasig.schedassist.model.AvailableSchedule)
+	 */
+	@Override
+	public List<net.fortuna.ical4j.model.Calendar> convertScheduleForReflection(
+			AvailableSchedule availableSchedule) {
+		if(availableSchedule.isEmpty()) {
+			return Collections.emptyList();
+		}
+		
+		SortedSet<AvailableBlock> combinedBlocks = AvailableBlockBuilder.combine(availableSchedule.getAvailableBlocks());
+		ComponentList components = new ComponentList();
+		for(AvailableBlock block: combinedBlocks) {
+			VEvent event = convertBlockToReflectionEvent(block);
+			components.add(event);
+		}
+		net.fortuna.ical4j.model.Calendar result = new net.fortuna.ical4j.model.Calendar(components);
+		result.getProperties().add(PROD_ID);
+		result.getProperties().add(Version.VERSION_2_0);
+		
+		List<net.fortuna.ical4j.model.Calendar> results = new ArrayList<net.fortuna.ical4j.model.Calendar>();
+		results.add(result);
+		return results;
+	}
 	/*
 	 * (non-Javadoc)
 	 * @see org.jasig.schedassist.model.DefaultEventUtilsImpl#convertBlockToReflectionEvent(org.jasig.schedassist.model.AvailableBlock)
@@ -431,6 +463,7 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 		VEvent event = super.convertBlockToReflectionEvent(block);
 		event.getProperties().add(ORACLE_DAILY_NOTE_PROPERTY);
 		event.getProperties().add(new XProperty("X-ORACLE-CLASS", "NORMAL"));
+		event.getProperties().add(Status.VEVENT_CONFIRMED);
 		return event;
 	}
 
