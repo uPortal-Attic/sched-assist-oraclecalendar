@@ -48,6 +48,7 @@ import oracle.calendar.sdk.Handle;
 import oracle.calendar.sdk.RequestResult;
 import oracle.calendar.sdk.Session;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
@@ -225,13 +226,13 @@ public abstract class AbstractOracleCalendarDao extends
 				for(Object a : attendeeList) {
 					Property attendee = (Property) a;
 					if(PartStat.DECLINED.equals(attendee.getParameter(PartStat.PARTSTAT))) {
-						LOG.warn("found attendee that has DECLINED event: " + attendee);
+						LOG.trace("found attendee that has DECLINED event: " + attendee);
 						Parameter appointmentRole = attendee.getParameter(AppointmentRole.APPOINTMENT_ROLE);
 						if(AppointmentRole.OWNER.equals(appointmentRole) ) {
 							// remove whole appointment
 							Uid eventUid = event.getUid();
 							cancelAppointmentInternal(session, eventUid);
-							LOG.warn("successfully cancelled appointment due to owner decline " + event);
+							LOG.warn("purgeDeclinedAttendees successfully cancelled appointment due to owner decline " + event);
 							addEventToResult = false;
 							this.applicationEventPublisher.publishEvent(new AutomaticAppointmentCancellationEvent(event, owner, Reason.OWNER_DECLINED));
 							break;
@@ -241,14 +242,14 @@ public abstract class AbstractOracleCalendarDao extends
 								// remove only the attendee (leave event)
 								event.getProperties().remove(attendee);
 								replaceEventInternal(session, event);
-								LOG.warn("successfully removed declined attendee from group appointment " + event);
+								LOG.warn("purgeDeclinedAttendees successfully removed declined attendee from group appointment " + event);
 								this.applicationEventPublisher.publishEvent(new AutomaticAttendeeRemovalEvent(event, owner, attendee));
 							} else {
 								// either one on one appointment or group appointment with only 1 visitor
 								// remove whole appointment
 								Uid eventUid = event.getUid();
 								cancelAppointmentInternal(session, eventUid);
-								LOG.warn("successfully cancelled appointment due to no remaining visitors " + event);
+								LOG.warn("purgeDeclinedAttendees successfully cancelled appointment due to no remaining visitors " + event);
 								addEventToResult = false;
 								this.applicationEventPublisher.publishEvent(new AutomaticAppointmentCancellationEvent(event, owner, Reason.NO_REMAINING_VISITORS));
 								break;
@@ -261,12 +262,12 @@ public abstract class AbstractOracleCalendarDao extends
 					resultList.add(event);
 				}
 			} else {
-				if(LOG.isDebugEnabled()) {
+				if(LOG.isTraceEnabled()) {
 					String eventUid = "not set";
 					if(event.getUid() != null) {
 						eventUid = event.getUid().getValue();
 					}
-					LOG.debug("event (UID=" + eventUid + ") not a candidate for purge, hasAvailableAppointmentProperty=" + hasAvailableAppointmentProperty + ", isAttendingAsOwner=" + isAttendingAsOwner);
+					LOG.trace("event (UID=" + eventUid + ") not a candidate for purge, hasAvailableAppointmentProperty=" + hasAvailableAppointmentProperty + ", isAttendingAsOwner=" + isAttendingAsOwner);
 				}
 				resultList.add(event);
 			}
@@ -315,6 +316,7 @@ public abstract class AbstractOracleCalendarDao extends
 
 		Session session = null;
 		boolean invalidateSession = false;
+		final String logEventKey = RandomStringUtils.randomAlphanumeric(16);
 		
 		try {
 			session = getSession(owner.getCalendarAccount(), serverNode);
@@ -331,37 +333,38 @@ public abstract class AbstractOracleCalendarDao extends
 
 			Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
-			RequestResult requestResults = new RequestResult();
+			
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("attempting first store, calendar: " + calendar.toString());
+				LOG.debug("createAppointment " + logEventKey + " attempting first Session#storeEvents for " + owner + ", " + visitor + ", " + block + ", " + event);
 			}
+			RequestResult requestResults = new RequestResult();
 			session.storeEvents(getOracleCreateFlags(), calendar.toString(), requestResults);
 
-			if(LOG.isDebugEnabled()) {
-				LOG.debug("first store results: " + requestResults.toString());
-			}
 			String eventUID = requestResults.getFirstResult().getUID();
+			if(LOG.isDebugEnabled()) {
+				LOG.debug("createAppointment " + logEventKey + " first Session#storeEvents results: " + requestResults.toString());
+			}
 			event.getProperties().add(new Uid(eventUID));
 
 			calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("attempting second store, calendar: " + calendar.toString());
+				LOG.debug("createAppointment " + logEventKey + " attempting second Session#storeEvents, event uid: " + eventUID);
 			}
 			session.storeEvents(getOracleModifyFlags(), calendar.toString(), requestResults);
 
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("second store results: " + requestResults.toString());
+				LOG.debug("createAppointment " + logEventKey + " second Session#storeEvents results: " + requestResults.toString());
 			}
 			return event;
 		} catch (Api.StatusException e) {
 			if(e.getStatus() == (Api.CSDK_STAT_SECUR_CANTBOOKATTENDEE | Api.CSDK_STATMODE_FATAL)) {
 				//TODO note that this exact error code will also be raised when attempting to create an appointment with resource that is already booked
-				LOG.error("createAppointment failed due to account not accepting invitations, visitor: " + visitor + ", owner: " + owner);
+				LOG.error(logEventKey + " createAppointment failed due to account not accepting invitations, visitor: " + visitor + ", owner: " + owner);
 				throw new VisitorDeclinedInvitationsException("createAppointment failed due to visitor not accepting invitations: visitor: " + visitor);
 			}
 			invalidateSession = true;
-			LOG.error("caught Api.StatusException in createAppoinment for " + owner + ", " + visitor + ", and " + block, e);
+			LOG.error(logEventKey + " caught Api.StatusException in createAppointment for " + owner + ", " + visitor + ", and " + block, e);
 			throw new OracleCalendarDataAccessException("caught Api.StatusException in createAppointment", e);
 		} finally {
 			doneWithSession(session, serverNode, invalidateSession);
@@ -399,16 +402,16 @@ public abstract class AbstractOracleCalendarDao extends
 	 */
 	protected final void cancelAppointmentInternal(Session session, Uid eventUid) throws StatusException {
 		RequestResult requestResult = new RequestResult();
-		LOG.debug("calling deleteEvents for event uid: " + eventUid);
+		LOG.debug("cancelAppointmentInternal calling Session#deleteEvents for event uid: " + eventUid);
 		if(eventUid != null) {
 			session.deleteEvents(Api.CSDK_FLAG_NONE, 
 				new String[] { eventUid.getValue() }, 
 				null, 
 				Api.CSDK_THISINSTANCE, 
 				requestResult);
-			LOG.debug("delete results: " + requestResult.toString());
+			LOG.debug("cancelAppointmentInternal Session#deleteEvents results for event uid " + eventUid + ": " + requestResult.toString());
 		} else {
-			LOG.error("skipping call to session.deleteEvents as eventUid argument is null");
+			LOG.error("cancelAppointmentInternal skipping call to session.deleteEvents as eventUid argument is null");
 		}
 	}
 
@@ -448,16 +451,19 @@ public abstract class AbstractOracleCalendarDao extends
 			appointment.getProperties().add(visitorAttendee);
 			Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(appointment);
 
+			if(LOG.isDebugEnabled()) {
+				LOG.debug("joinAppointment " + eventUid + " attempting first Session#storeEvents for " + owner + ", " + visitor + ", " + appointment);
+			}
 			RequestResult requestResults = new RequestResult();
 			session.storeEvents(getOracleModifyFlags(), calendar.toString(), requestResults);
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("first storeEvents complete: " + requestResults.toString());
+				LOG.debug("joinAppointment " + eventUid + " first Session#storeEvents complete, capi result: " + requestResults.toString());
 			}
 
 			// a 2nd storeEvents MUST be called on the same event to get PARTSTAT=ACCEPTED to persist
 			session.storeEvents(getOracleModifyFlags(), calendar.toString(), requestResults);
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("second storeEvents complete: " + requestResults.toString());
+				LOG.debug("joinAppointment " + eventUid + " second Session#storeEventsstoreEvents complete: " + requestResults.toString());
 			}
 			
 			return appointment;
@@ -490,7 +496,7 @@ public abstract class AbstractOracleCalendarDao extends
 			Date endTime = appointment.getEndDate(true).getDate();
 			VEvent targetAppointment = getAvailableAppointmentInternal(owner, startTime, endTime, session);
 			if(null == targetAppointment) {
-				throw new SchedulingException("appointment does not exist in owner's schedule: " + appointment);
+				throw new SchedulingException("leaveAppointment: appointment does not exist in  schedule for " + owner + ", " + visitor + "; appointment: " + appointment);
 			}
 			// last check of visitor limit
 			Property visitorLimit = targetAppointment.getProperty(VisitorLimit.VISITOR_LIMIT);
@@ -507,8 +513,9 @@ public abstract class AbstractOracleCalendarDao extends
 			for(Object o : attendeeList) {
 				Attendee attendee = (Attendee) o;
 				if(this.oracleEventUtils.attendeeMatchesPerson(attendee, visitor.getCalendarAccount())) {
-					LOG.debug("found matching attendee: " + attendee);
+					LOG.debug(eventUid + " leaveAppointment found matching attendee: " + attendee);
 					targetAppointment.getProperties().remove(o);
+					break;
 				}
 			}
 			
@@ -537,10 +544,13 @@ public abstract class AbstractOracleCalendarDao extends
 	protected void replaceEventInternal(Session session, VEvent event) throws StatusException {
 		Calendar calendar = this.oracleEventUtils.wrapEventInCalendar(event);
 
+		if(LOG.isDebugEnabled()) {
+			LOG.debug("replaceEventInternal before Session#storeEvents for " + event);
+		}
 		RequestResult requestResults = new RequestResult();
 		session.storeEvents(getOracleReplaceFlags(), calendar.toString(), requestResults);
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("replaceEventInternal complete: " + requestResults.toString());
+			LOG.debug("replaceEventInternal Session#storeEvents capi result: " + requestResults.toString());
 		}
 	}
 
@@ -596,9 +606,12 @@ public abstract class AbstractOracleCalendarDao extends
 				// oracleEventUtils overrides this method to only return 1 calendar
 				if(!newReflections.isEmpty()) {
 					RequestResult storeResult = new RequestResult();
+					if(LOG.isDebugEnabled()) {
+						LOG.debug("reflectAvailableSchedule begin call to Session#storeEvents for " + owner);
+					}
 					session.storeEvents(getOracleCreateReflectionFlags(), newReflections.toString(), storeResult);
 					if(LOG.isDebugEnabled()) {
-						LOG.debug("store new reflections complete: " + storeResult);
+						LOG.debug("reflectAvailableSchedule Session#storeEvents for " + owner + " complete, capi result: " + storeResult);
 					}
 				} else {
 					LOG.debug("store new reflections skipped as schedule is now empty");
@@ -696,7 +709,7 @@ public abstract class AbstractOracleCalendarDao extends
 			return guid;
 		}
 		
-		LOG.info("oracle GUID not found from attributes map, attempting cast");
+		LOG.debug("oracle GUID not found from attributes map, attempting cast");
 		// fail safe
 		if(calendarAccount instanceof AbstractOracleCalendarAccount) {
 			AbstractOracleCalendarAccount casted = (AbstractOracleCalendarAccount) calendarAccount;
@@ -705,14 +718,14 @@ public abstract class AbstractOracleCalendarDao extends
 				return castedGuid;
 			} 
 		} else {
-			LOG.info("non oracle calendar account detected in OracleCalendarDao: " + calendarAccount);
+			LOG.warn("non oracle calendar account detected in OracleCalendarDao: " + calendarAccount);
 		}
 		
 		// fall back to OracleGUIDSource
 		try {
 			return this.oracleGUIDSource.getOracleGUID(calendarAccount, session);
 		} catch (StatusException e) {
-			LOG.info("unable to locate oracle GUID for " + calendarAccount, e);
+			LOG.warn("unable to locate oracle GUID for " + calendarAccount, e);
 			return null;
 		}
 	}
@@ -767,6 +780,9 @@ public abstract class AbstractOracleCalendarDao extends
 	 */
 	protected final void removeAvailableScheduleReflections(IScheduleOwner owner, List<String> eventUids, Session session) throws StatusException {
 		if(!eventUids.isEmpty()) {
+			if(LOG.isDebugEnabled()) {
+				LOG.debug("removeAvailableScheduleReflections begin Session#deleteEvents for " + owner);
+			}
 			RequestResult deleteResult = new RequestResult();
 			session.deleteEvents(Api.CSDK_FLAG_CONTINUE_ON_ERROR, 
 				eventUids.toArray(new String[] {}),
@@ -774,7 +790,7 @@ public abstract class AbstractOracleCalendarDao extends
 				Api.CSDK_THISINSTANCE,
 				deleteResult);
 			if(LOG.isDebugEnabled()) {
-				LOG.debug("delete existing reflections complete: " + deleteResult);
+				LOG.debug("removeAvailableScheduleReflections Session#deleteEvents for " + owner + " complete, capi result: " + deleteResult);
 			}
 		} else {
 			LOG.debug("eventUids was empty");
@@ -839,8 +855,8 @@ public abstract class AbstractOracleCalendarDao extends
 				if((AppointmentRole.BOTH.equals(ownerAttendeeRole) || AppointmentRole.OWNER.equals(ownerAttendeeRole)) &&
 						eventStart.equals(startTime) &&
 						eventEnd.equals(endTime)) {
-					if(LOG.isDebugEnabled()) {
-						LOG.debug("getAvailableAppointment found " + event);
+					if(LOG.isTraceEnabled()) {
+						LOG.trace("getAvailableAppointment found " + event);
 					}
 					return event;
 				}
@@ -868,16 +884,16 @@ public abstract class AbstractOracleCalendarDao extends
 				if((AppointmentRole.BOTH.equals(ownerAttendeeRole) || AppointmentRole.OWNER.equals(ownerAttendeeRole)) &&
 						eventStart.equals(ical4jstart) &&
 						eventEnd.equals(ical4jend)) {
-					if(LOG.isDebugEnabled()) {
-						LOG.debug("getAvailableAppointment found " + event);
+					if(LOG.isTraceEnabled()) {
+						LOG.trace("getAvailableAppointment found " + event);
 					}
 					
 					return event;
 				}
 			}
 		}
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("getAvailableAppointment found no match for times: " + startTime + ", " + endTime + ", owner: " + owner);
+		if(LOG.isTraceEnabled()) {
+			LOG.trace("getAvailableAppointment found no match for times: " + startTime + ", " + endTime + ", owner: " + owner);
 		}
 		return null;
 	}
@@ -909,8 +925,8 @@ public abstract class AbstractOracleCalendarDao extends
 				properties,
 				requestResults);
 
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("raw agenda from Session#fetchEventsByRange for " + calendarUser + ": " + agenda);
+		if(LOG.isTraceEnabled()) {
+			LOG.trace("raw agenda from Session#fetchEventsByRange for " + calendarUser + ": " + agenda);
 		}
 		return agenda;
 	}
@@ -953,8 +969,8 @@ public abstract class AbstractOracleCalendarDao extends
 		CalendarBuilder builder = new CalendarBuilder();
 		try {
 			Calendar result = builder.build(reader);
-			if(LOG.isDebugEnabled()) {
-				LOG.debug(result.toString());
+			if(LOG.isTraceEnabled()) {
+				LOG.trace(result.toString());
 			}	
 			return result;
 		} catch (IOException e) {
@@ -972,7 +988,7 @@ public abstract class AbstractOracleCalendarDao extends
 	protected String getOracleStoredEmail(final ICalendarAccount user, final Session session) throws Api.StatusException {
 		Handle handle = session.getHandle(Api.CSDK_FLAG_NONE, user.getCalendarLoginId());
 		String email = handle.getEmail();
-		LOG.debug("oracle stored email: " + email);
+		LOG.debug("oracle stored email for " + user + ": " + email);
 		return email;
 	}
 
