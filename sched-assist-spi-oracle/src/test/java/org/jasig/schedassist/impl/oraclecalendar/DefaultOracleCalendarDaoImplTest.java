@@ -156,7 +156,7 @@ public class DefaultOracleCalendarDaoImplTest {
 		Assert.assertEquals("testCreateEvent", lookupResult.getDescription().getValue());
 		
 		
-		oracleCalendarDao.cancelAppointment(owner, event);
+		oracleCalendarDao.cancelAppointment(visitor, owner, event);
 		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
 		Assert.assertNull(lookupResultAfterCancel);
 	}
@@ -223,7 +223,7 @@ public class DefaultOracleCalendarDaoImplTest {
 		Assert.assertEquals("testCreateEvent with resource account as owner", lookupResult.getDescription().getValue());
 		
 		
-		oracleCalendarDao.cancelAppointment(owner, event);
+		oracleCalendarDao.cancelAppointment(visitor, owner, event);
 		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
 		Assert.assertNull(lookupResultAfterCancel);
 	}
@@ -346,7 +346,7 @@ public class DefaultOracleCalendarDaoImplTest {
 			}
 		}
 		
-		oracleCalendarDao.cancelAppointment(owner, lookupResult);
+		oracleCalendarDao.cancelAppointment(visitor, owner, lookupResult);
 		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
 		Assert.assertNull(lookupResultAfterCancel);
 	}
@@ -400,7 +400,7 @@ public class DefaultOracleCalendarDaoImplTest {
 		Assert.assertEquals(AppointmentRole.OWNER, ownerAttendee.getParameter(AppointmentRole.APPOINTMENT_ROLE));
 		Assert.assertEquals("testCreateEvent with role-based account as owner", event.getDescription().getValue());
 		
-		oracleCalendarDao.cancelAppointment(owner, event);
+		oracleCalendarDao.cancelAppointment(visitor, owner, event);
 		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
 		Assert.assertNull(lookupResultAfterCancel);
 	}
@@ -445,7 +445,7 @@ public class DefaultOracleCalendarDaoImplTest {
 		Assert.assertEquals(1, Integer.parseInt(lookupResult.getProperty(VisitorLimit.VISITOR_LIMIT).getValue()));
 		Assert.assertEquals("testCreateEvent with Resource as owner", lookupResult.getDescription().getValue());
 		
-		oracleCalendarDao.cancelAppointment(owner, event);
+		oracleCalendarDao.cancelAppointment(visitor, owner, event);
 		VEvent lookupResultAfterCancel = oracleCalendarDao.getExistingAppointment(owner, block);
 		Assert.assertNull(lookupResultAfterCancel);
 	}

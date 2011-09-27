@@ -373,10 +373,10 @@ public abstract class AbstractOracleCalendarDao extends
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.jasig.schedassist.ICalendarDataDao#cancelAppointment(org.jasig.schedassist.model.IScheduleOwner, net.fortuna.ical4j.model.component.VEvent)
+	 * @see org.jasig.schedassist.ICalendarDataDao#cancelAppointment(org.jasig.schedassist.model.IScheduleVisitor, org.jasig.schedassist.model.IScheduleOwner, net.fortuna.ical4j.model.component.VEvent)
 	 */
 	@Override
-	public final void cancelAppointment(IScheduleOwner owner, VEvent event) {
+	public final void cancelAppointment(IScheduleVisitor visitor, IScheduleOwner owner, VEvent event) {
 		Validate.notNull(event, "event argument cannot be null for cancelAppointment");
 		OracleCalendarServerNode serverNode = getOracleCalendarServerNode(owner.getCalendarAccount());
 		Session session = null;
