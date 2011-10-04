@@ -53,13 +53,11 @@ import net.fortuna.ical4j.model.property.Summary;
 import net.fortuna.ical4j.model.property.Version;
 import net.fortuna.ical4j.model.property.XProperty;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.jasig.schedassist.IAffiliationSource;
-import org.jasig.schedassist.model.AffiliationImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailableBlock;
 import org.jasig.schedassist.model.AvailableBlockBuilder;
@@ -81,7 +79,7 @@ import org.jasig.schedassist.model.VisitorLimit;
  * @author Nicholas Blair, nblair@doit.wisc.edu
  * @version $Id: OracleEventUtilsImpl.java 2923 2010-12-08 17:39:50Z npblair $
  */
-public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
+public class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 
 	/**
 	 * Date/time format for iCalendar.
@@ -113,10 +111,6 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 	protected static final String ORACLE_PERSONAL_COMMENTS = "X-ORACLE-PERSONAL-COMMENT";
 	
 	/**
-	 * URL prefix for dars web application
-	 */
-	private static final String DARS_WEB_PREFIX = "https://dars.services.wisc.edu/?campus=";
-	/**
 	 * {@link Property} that signals the {@link VEvent} is an Oracle "DAILY NOTE".
 	 */
 	public static final Property ORACLE_APPOINTMENT_PROPERTY = new XProperty(ORACLE_EVENTTYPE, "APPOINTMENT");
@@ -132,7 +126,6 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 	// Commons-Lang provides a thread-safe replacement for SimpleDateFormat
 	public static final FastDateFormat FASTDATEFORMAT = FastDateFormat.getInstance(ICAL_DATETIME_FORMAT, 
 			TimeZone.getTimeZone("UTC"));
-
 	/**
 	 * 
 	 * @param affiliationSource
@@ -263,32 +256,7 @@ public final class OracleEventUtilsImpl extends DefaultEventUtilsImpl {
 				title.append(visitor.getCalendarAccount().getDisplayName());
 				
 				// build event description
-				StringBuilder descriptionBuilder = new StringBuilder();
-				descriptionBuilder.append(eventDescription);
-				// if the owner is an advisor
-				if(getAffiliationSource().doesAccountHaveAffiliation(owner.getCalendarAccount(), AffiliationImpl.ADVISOR)) {
-					// and the visitor is a student
-					String studentId = visitor.getCalendarAccount().getAttributeValue("wiscedustudentid");
-					if(null != studentId) {
-						// append the UW Student ID to the event description
-						descriptionBuilder.append(" [UW Student ID: ");
-						descriptionBuilder.append(studentId);
-						descriptionBuilder.append("]");
-						
-						// add the DARS url for the student in the advisor's personal notes
-						StringBuilder personalNotesBuilder = new StringBuilder();
-						personalNotesBuilder.append("DARS reports for ");
-						personalNotesBuilder.append(visitor.getCalendarAccount().getDisplayName());
-						personalNotesBuilder.append(": ");
-						personalNotesBuilder.append(DARS_WEB_PREFIX);
-						personalNotesBuilder.append(studentId);
-						//String darsUrlString = DARS_WEB_PREFIX + studentId;
-						String commentsValue = new String(Base64.encodeBase64(personalNotesBuilder.toString().getBytes()));
-						XParameter ownerPersonalNotes = new XParameter(ORACLE_PERSONAL_COMMENTS, commentsValue);
-						ownerAttendee.getParameters().add(ownerPersonalNotes);
-					}
-				}
-				Description description = new Description(descriptionBuilder.toString());
+				Description description = new Description(eventDescription);
 				event.getProperties().add(description);
 			} 
 			

@@ -19,10 +19,6 @@
 
 package org.jasig.schedassist.impl.oraclecalendar;
 
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.verify;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,12 +50,8 @@ import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Status;
 import net.fortuna.ical4j.util.CompatibilityHints;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.time.DateUtils;
-import org.easymock.EasyMock;
-import org.jasig.schedassist.IAffiliationSource;
 import org.jasig.schedassist.NullAffiliationSourceImpl;
-import org.jasig.schedassist.model.AffiliationImpl;
 import org.jasig.schedassist.model.AppointmentRole;
 import org.jasig.schedassist.model.AvailabilityReflection;
 import org.jasig.schedassist.model.AvailableBlock;
@@ -596,82 +588,6 @@ public class OracleEventUtilsImplTest {
 				Assert.fail("unexpected value for appointment role: " + appointmentRole.getValue());
 			}
 		}
-	}
-	
-	/**
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testConstructAvailableAppointmentVisitorIsStudentOwnerIsAdvisor() throws Exception {
-		// construct visitor
-		Map<String, String> attributes = new HashMap<String, String>();
-		attributes.put("wiscedustudentid", "studentidnumber");
-		OracleCalendarUserAccount calendarAccount = new OracleCalendarUserAccount(attributes);
-		calendarAccount.setEmailAddress("somevisitor@wisc.edu");
-		calendarAccount.setDisplayName("Some A Visitor");
-		calendarAccount.setSurname("Visitor");
-		calendarAccount.setGivenName("Some");
-	
-		MockScheduleVisitor visitor = new MockScheduleVisitor(calendarAccount);
-		
-		// construct owner
-		Map<String, String> attributes2 = new HashMap<String, String>();
-		attributes2.put("wisceduadvisorflag", "Y");
-		OracleCalendarUserAccount calendarAccount2 = new OracleCalendarUserAccount(attributes2);
-		calendarAccount2.setEmailAddress("someowner@wisc.edu");
-		calendarAccount2.setDisplayName("Some A Owner");
-		calendarAccount2.setSurname("Owner");
-		calendarAccount2.setGivenName("Some");
-		MockScheduleOwner owner = new MockScheduleOwner(calendarAccount2, 1);
-		owner.setPreference(Preferences.LOCATION, "Owner's office");
-		
-		// need to construct an AffiliationSource that will mock the "advisor" scenario
-		IAffiliationSource affiliationSource = EasyMock.createMock(IAffiliationSource.class);
-		expect(affiliationSource.doesAccountHaveAffiliation(calendarAccount2, AffiliationImpl.ADVISOR)).andReturn(true);
-		replay(affiliationSource);
-		OracleEventUtilsImpl alternate = new OracleEventUtilsImpl(affiliationSource);
-		
-		VEvent availableAppointment = alternate.constructAvailableAppointment(
-				AvailableBlockBuilder.createBlock("20091006-1300", "20091006-1330"),
-				owner, 
-				null,
-				visitor, 
-				null,
-				"test event description");
-		
-		Assert.assertEquals("Appointment with Some Visitor", availableAppointment.getSummary().getValue());
-		Assert.assertEquals("test event description [UW Student ID: studentidnumber]", availableAppointment.getDescription().getValue());
-		Assert.assertEquals("Owner's office", availableAppointment.getLocation().getValue());
-		Assert.assertEquals(makeDateTime("20091006-1300"), availableAppointment.getStartDate().getDate());
-		Assert.assertEquals(makeDateTime("20091006-1330"), availableAppointment.getEndDate().getDate());
-		Assert.assertEquals("TRUE", availableAppointment.getProperty(SchedulingAssistantAppointment.AVAILABLE_APPOINTMENT).getValue());
-		Assert.assertEquals("1", availableAppointment.getProperty(VisitorLimit.VISITOR_LIMIT).getValue());
-		Assert.assertEquals(Status.VEVENT_CONFIRMED, availableAppointment.getProperty(Status.STATUS));
-		PropertyList attendeePropertyList = availableAppointment.getProperties(Attendee.ATTENDEE);
-		for(Object o : attendeePropertyList) {
-			Property attendee = (Property) o;
-			Assert.assertEquals(PartStat.ACCEPTED, attendee.getParameter(PartStat.PARTSTAT));
-			Assert.assertEquals(CuType.INDIVIDUAL, attendee.getParameter(CuType.CUTYPE));
-			Assert.assertEquals(Rsvp.FALSE, attendee.getParameter(Rsvp.RSVP));
-			Parameter appointmentRole = attendee.getParameter(AppointmentRole.APPOINTMENT_ROLE);
-			if("VISITOR".equals(appointmentRole.getValue())) {
-				Assert.assertEquals("mailto:somevisitor@wisc.edu", attendee.getValue());
-				Assert.assertNull(attendee.getParameter("X-ORACLE-GUID"));
-				Assert.assertEquals("Some Visitor", attendee.getParameter("CN").getValue());
-			} else if ("OWNER".equals(appointmentRole.getValue())) {
-				Assert.assertEquals("mailto:someowner@wisc.edu", attendee.getValue());
-				Assert.assertNull(attendee.getParameter("X-ORACLE-GUID"));
-				Assert.assertEquals("Some Owner", attendee.getParameter("CN").getValue());
-				Parameter oraclePersonalNote = attendee.getParameter(OracleEventUtilsImpl.ORACLE_PERSONAL_COMMENTS);
-				Assert.assertNotNull(oraclePersonalNote);
-				byte[] valueDecoded = Base64.decodeBase64(oraclePersonalNote.getValue().getBytes());
-				Assert.assertEquals("DARS reports for Some Visitor: https://dars.services.wisc.edu/?campus=studentidnumber", new String(valueDecoded));
-			} else {
-				Assert.fail("unexpected value for appointment role: " + appointmentRole.getValue());
-			}
-		}
-		verify(affiliationSource);
 	}
 	
 	/**
