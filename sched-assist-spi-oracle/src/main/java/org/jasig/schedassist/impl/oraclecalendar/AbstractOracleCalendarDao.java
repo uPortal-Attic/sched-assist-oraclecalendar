@@ -604,17 +604,18 @@ public abstract class AbstractOracleCalendarDao extends
 
 				List<Calendar> newReflections = this.oracleEventUtils.convertScheduleForReflection(schedule);
 				// oracleEventUtils overrides this method to only return 1 calendar
-				if(!newReflections.isEmpty()) {
+				if(newReflections.size() == 1) {
 					RequestResult storeResult = new RequestResult();
 					if(LOG.isDebugEnabled()) {
 						LOG.debug("reflectAvailableSchedule begin call to Session#storeEvents for " + owner);
 					}
-					session.storeEvents(getOracleCreateReflectionFlags(), newReflections.toString(), storeResult);
+					Calendar calendar = newReflections.get(0);
+					session.storeEvents(getOracleCreateReflectionFlags(), calendar.toString(), storeResult);
 					if(LOG.isDebugEnabled()) {
 						LOG.debug("reflectAvailableSchedule Session#storeEvents for " + owner + " complete, capi result: " + storeResult);
 					}
 				} else {
-					LOG.debug("store new reflections skipped as schedule is now empty");
+					LOG.debug("store new reflections skipped as schedule size != 1, size " + newReflections.size());
 				}
 				
 			} catch (Api.StatusException e) {
