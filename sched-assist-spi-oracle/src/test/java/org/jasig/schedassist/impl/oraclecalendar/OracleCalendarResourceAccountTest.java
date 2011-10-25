@@ -55,15 +55,19 @@ public class OracleCalendarResourceAccountTest {
 		resourceAccount.setResourceName("DOIT blair test");
 		
 		Assert.assertNull(resourceAccount.getEmailAddress());
-		
+		Assert.assertFalse(resourceAccount.isEligible());
 		// set GUID, and getEmailAddress will change
 		resourceAccount.setOracleGuid("0123456789ABCDE");
 		
 		Assert.assertEquals("0123456789ABCDE@email.invalid", resourceAccount.getEmailAddress());
+		Assert.assertFalse(resourceAccount.isEligible());
+		Assert.assertTrue(resourceAccount.isBogusOracleEmailAddress());
 		
 		// override email address, and getEmailAddress will change
 		resourceAccount.setEmailAddress("something@else.com");
 		
 		Assert.assertEquals("something@else.com", resourceAccount.getEmailAddress());
+		Assert.assertTrue(resourceAccount.isEligible());
+		Assert.assertFalse(resourceAccount.isBogusOracleEmailAddress());
 	}
 }
