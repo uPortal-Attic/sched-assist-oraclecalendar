@@ -175,7 +175,23 @@ public abstract class AbstractOracleCalendarAccount extends AbstractCalendarAcco
 	 */
 	@Override
 	public final boolean isEligible() {
-		return StringUtils.isNotBlank(this.ctcalxitemid) && StringUtils.isNotBlank(getEmailAddress());
+		return StringUtils.isNotBlank(this.ctcalxitemid) && StringUtils.isNotBlank(getEmailAddress()) && !isBogusOracleEmailAddress();
+	}
+	
+	/**
+	 * Oracle Calendar will set a bogus email address for accounts that don't have a proper
+	 * email attribute value set in LDAP.
+	 * This bogus email address looks like: ORACLE_GUID@email.invalid.
+	 * 
+	 * @return true if this instance has a bogus Oracle Calendar email address
+	 */
+	public boolean isBogusOracleEmailAddress() {
+		String email = getEmailAddress();
+		if(StringUtils.isBlank(email)) {
+			return false;
+		}
+		
+		return email.endsWith("email.invalid");
 	}
 	/**
 	 * Ignored, no-op.
