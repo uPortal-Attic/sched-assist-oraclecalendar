@@ -468,6 +468,11 @@ public abstract class AbstractOracleCalendarDao extends
 			
 			return appointment;
 		} catch (Api.StatusException e) {
+			if(e.getStatus() == (Api.CSDK_STAT_SECUR_CANTBOOKATTENDEE | Api.CSDK_STATMODE_FATAL)) {
+				//TODO note that this exact error code will also be raised when attempting to create an appointment with resource that is already booked
+				LOG.error("joinAppointment " + eventUid + " failed due to account not accepting invitations, visitor: " + visitor + ", owner: " + owner);
+				throw new VisitorDeclinedInvitationsException("createAppointment failed due to visitor not accepting invitations: visitor: " + visitor);
+			}
 			LOG.error("caught Api.StatusException in joinAppoinment for owner " + owner + " and " + visitor + " and " + eventUid, e);
 			invalidateSession = true;
 			throw new OracleCalendarDataAccessException("caught Api.StatusException in joinAppointment", e);
@@ -524,6 +529,11 @@ public abstract class AbstractOracleCalendarDao extends
 			return targetAppointment;
 			
 		} catch (Api.StatusException e) {
+			if(e.getStatus() == (Api.CSDK_STAT_SECUR_CANTBOOKATTENDEE | Api.CSDK_STATMODE_FATAL)) {
+				//TODO note that this exact error code will also be raised when attempting to create an appointment with resource that is already booked
+				LOG.error("leaveAppointment " + eventUid + " failed due to account not accepting invitations, visitor: " + visitor + ", owner: " + owner);
+				throw new VisitorDeclinedInvitationsException("createAppointment failed due to visitor not accepting invitations: visitor: " + visitor);
+			}
 			LOG.error("caught Api.StatusException in leaveAppoinment for " + owner + " and " + visitor + " and " + eventUid, e);
 			invalidateSession = true;
 			throw new OracleCalendarDataAccessException("caught Api.StatusException", e);
