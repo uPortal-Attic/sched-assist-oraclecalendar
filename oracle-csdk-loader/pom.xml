@@ -36,16 +36,12 @@
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<!-- ${oracle.calendar.home}/ocal/lib/libcsdkjni.so is 32 bit library, so we are stuck referencing the 32 bit libraries and running the jvm in 32 bit mode -->
+					<argLine>-d32 -Djava.library.path=${oracle.calendar.home}/lib32:${oracle.calendar.home}/ocal/lib</argLine>
 					<forkMode>pertest</forkMode>
 					<environmentVariables>
-						<LD_LIBRARY_PATH>${oracle.calendar.home}/lib:${oracle.calendar.home}/ocal/lib</LD_LIBRARY_PATH>
+						<LD_LIBRARY_PATH>${oracle.calendar.home}/lib32:${oracle.calendar.home}/ocal/lib</LD_LIBRARY_PATH>
 					</environmentVariables>
-					<systemProperties>
-						<property>
-							<name>java.library.path</name>
-							<value>${oracle.calendar.home}/lib:${oracle.calendar.home}/ocal/lib</value>
-						</property>
-					</systemProperties>
 					<additionalClasspathElements>
 						<additionalClasspathElement>${project.basedir}/src/test/resources/test-csdk-config-injar.jar</additionalClasspathElement>
 					</additionalClasspathElements>
