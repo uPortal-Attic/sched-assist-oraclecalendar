@@ -34,13 +34,31 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<version>1.0-alpha-2</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>read-project-properties</goal>
+						</goals>
+						<configuration>
+							<files>
+								<file>../build.properties</file>
+							</files>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<!-- ${oracle.calendar.home}/ocal/lib/libcsdkjni.so is 32 bit library, so we are stuck referencing the 32 bit libraries and running the jvm in 32 bit mode -->
-					<argLine>-d32 -Djava.library.path=${oracle.calendar.home}/lib32:${oracle.calendar.home}/ocal/lib</argLine>
+					<argLine>-d32 -Djava.library.path=${oracle.install.home}/lib32:${oracle.install.home}/ocal/lib</argLine>
 					<forkMode>pertest</forkMode>
 					<environmentVariables>
-						<LD_LIBRARY_PATH>${oracle.calendar.home}/lib32:${oracle.calendar.home}/ocal/lib</LD_LIBRARY_PATH>
+						<LD_LIBRARY_PATH>${oracle.install.home}/lib32:${oracle.install.home}/ocal/lib</LD_LIBRARY_PATH>
 					</environmentVariables>
 					<additionalClasspathElements>
 						<additionalClasspathElement>${project.basedir}/src/test/resources/test-csdk-config-injar.jar</additionalClasspathElement>

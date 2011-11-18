@@ -35,9 +35,6 @@
 	</repositories>
 	<properties>
 		<oracle.csdk.version>10.1.2.3.4</oracle.csdk.version>
-		<!-- | WARNING: this location is environment specific. If you are developing 
-			this library, you must alter this property locally. -->
-		<oracle.calendar.home>/usr/local/oracle-csdk</oracle.calendar.home>
 	</properties>
 
 	<build>
