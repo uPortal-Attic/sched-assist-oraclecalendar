@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>sched-assist-oraclecalendar</artifactId>
 		<groupId>org.jasig.sched-assist</groupId>
-		<version>1.0.7-SNAPSHOT</version>
+		<version>1.0.7</version>
 	</parent>
 
 	<artifactId>sched-assist-war-oracle</artifactId>
